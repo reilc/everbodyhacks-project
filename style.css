@@ -259,3 +259,27 @@ body {
 .reports-empty { padding: 20px; font-size: 12px; }
 
 .report-card { border-left-width: 3px !important; }
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Smooth spacing between your icon and titles */
+  }
+  
+  /* 2. Lock down the square container dimensions */
+  .logo-icon {
+    width: 40px;         /* Match the size your 'F' layout used */
+    height: 40px;        /* Forces a perfect square aspect ratio */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;    /* Keeps any stray pixels from spilling out */
+    flex-shrink: 0;      /* Prevents the sidebar text from crushing the box */
+  }
+  
+  /* 3. Force the image to obey the box limits */
+  .logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Shrinks the image beautifully without warping its shape */
+  }
