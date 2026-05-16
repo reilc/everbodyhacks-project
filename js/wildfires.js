@@ -167,6 +167,10 @@ function renderFires() {
   renderPerimeters(perimeters);
   renderFirePoints(stats);
   renderFireCards(list, stats, perimeters);
+
+  if (typeof renderSmoke === 'function') {
+    renderSmoke();
+  }
 }
 
 function renderPerimeters(perimeters) {
