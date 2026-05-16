@@ -1,43 +1,52 @@
-# 🔥 Wildfire Community Response Hub
+# 🌲 Evergreen Alert
 
-A web app built for **Everybody Hacks 2026** that helps Washington State residents affected by wildfires find nearby shelters, understand historical fire data, and access verified information quickly.
+A web app built for **Everybody Hacks 2026** that helps Washington State residents prepare for, respond to, and recover from wildfires. Simulated around the **July 4, 2024** WA wildfire event.
 
 ---
 
 ## What It Does
 
-- **Live FEMA shelter data** — fetches currently open emergency shelters in Washington state directly from FEMA's public API
-- **Historical wildfire data** — displays past WA wildfire perimeters and details from Washington State's geographic database
-- **Interactive map** — click any shelter or fire card in the sidebar to fly to it on the map
-- **Search & filters** — filter shelters by status (Open/Closed) and fires by year, or search by name/location
-- **Fallback data** — if FEMA has no active shelters (no declared disaster), the app shows known WA emergency venues so the map is never empty
+**Resources tab** — finds confirmed food banks, wildfire shelters, and community resource centers near the user. Automatically loads resources based on the user's GPS location on page open, or searchable by any Washington city.
+
+**Wildfires tab** — displays WA DNR 2024 wildfire fire records and mapped perimeters across Washington state, with sized markers based on acres burned. Includes a **Community Reports** section at the top where users can pin and report fires they see in real time.
+
+**Smoke tab** — shows a simulated smoke risk overlay derived from the July 4, 2024 fire records, helping users understand air quality risk by area.
+
+**Add Fire Note** — a collapsible panel on the map (top-right) that lets users report a fire by tapping a mini-map to pin its location. The mini-map centers on the user's GPS location with a blue "you are here" dot. Reports show up instantly in the Community Reports section of the Wildfires tab, sorted by proximity to the user and then by severity.
+
+---
+
+## Features
+
+- 📍 **Auto-location** — prompts for GPS on load and automatically shows nearby resources and centers the map
+- 🗺️ **Interactive Leaflet map** — click any card to fly the map to that location
+- 🔥 **WA DNR 2024 fire data** — real fire records with sized markers and polygon perimeters
+- 🏕️ **Verified resource data** — confirmed July 2024 food banks, shelters, and community centers
+- 💨 **Smoke risk overlay** — simulated AQI risk zones from fire proximity
+- 🚨 **Community fire reporting** — pin a fire location on a mini-map, add severity/type/notes, reverse-geocoded to a real place name
+- 📋 **Report sorting** — community reports sorted by distance from user, then by severity
+- 🔍 **City search** — search any Washington city to filter resources and fires to that area
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-You just need Python installed (comes pre-installed on most Macs).
+Python (pre-installed on most Macs) or any static file server.
 
-### Running the app
+### Run locally
 
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/reilc/everbodyhacks-project.git
-   cd everbodyhacks-project
-   ```
+```bash
+git clone https://github.com/reilc/everbodyhacks-project.git
+cd everbodyhacks-project
+python3 -m http.server 8080
+```
 
-2. Start a local server:
-   ```bash
-   python3 -m http.server 8080
-   ```
+Then open **http://localhost:8080** in your browser.
 
-3. Open your browser and go to:
-   ```
-   http://localhost:8080
-   ```
+> ⚠️ Do **not** open `index.html` directly as a file (`file:///...`) — the external APIs won't load due to browser CORS restrictions. Always use `localhost`.
 
-> ⚠️ Do **not** open `index.html` directly as a file (`File:///...`) — the APIs won't load. Always use `localhost`.
+When prompted, **allow location access** — this enables auto-loading nearby resources and the blue dot in the fire report mini-map.
 
 ---
 
@@ -45,57 +54,80 @@ You just need Python installed (comes pre-installed on most Macs).
 
 ```
 everbodyhacks-project/
-├── index.html          # HTML skeleton — sidebar, panels, map container
-├── css/
-│   └── style.css       # All styling and CSS variables
+├── index.html            # HTML structure — sidebar, tabs, panels, map
+├── style.css             # All styling and CSS variables
 └── js/
-    ├── config.js       # API URLs, shared state, fallback shelter data
-    ├── map.js          # Leaflet map setup, tile layer, WA outline
-    ├── shelters.js     # FEMA shelter fetching and rendering
-    ├── wildfires.js    # WA wildfire fetching and rendering
-    └── ui.js           # Tabs, filters, search, app boot
+    ├── config.js         # API URLs, constants, shared state
+    ├── map.js            # Leaflet map init, WA outline, tile layer
+    ├── shelters.js       # Resource fetching, scoring, and rendering
+    ├── wildfires.js      # WA DNR fire data, perimeters, community reports section
+    ├── smoke.js          # Smoke risk overlay rendering
+    ├── aqi-service.js    # AQI data service
+    ├── ui.js             # Tabs, search, GPS auto-load, app boot
+    └── fire-report.js    # "Add Fire Note" map control with mini-map picker
 ```
 
 ### Who owns what
+
 | File | Responsible for |
 |---|---|
-| `index.html` | Page structure, adding new panels or sections |
-| `css/style.css` | Visual design, colors, layout |
-| `js/config.js` | API endpoints, adding new data sources |
-| `js/map.js` | Map behaviour, zoom, overlays |
-| `js/shelters.js` | Shelter data fetching and sidebar cards |
-| `js/wildfires.js` | Wildfire data fetching and sidebar cards |
-| `js/ui.js` | User interactions — filters, search, tab switching |
+| `index.html` | Page structure, tabs, panels |
+| `style.css` | All visual design and CSS variables |
+| `js/config.js` | API endpoints, simulation date, shared constants |
+| `js/map.js` | Map setup, tile layer, WA state outline |
+| `js/shelters.js` | Resource data, scoring, distance filtering, cards |
+| `js/wildfires.js` | Fire data fetching, perimeters, community reports section |
+| `js/smoke.js` | Smoke overlay layer |
+| `js/ui.js` | Search, tabs, GPS auto-load on boot |
+| `js/fire-report.js` | Report a fire panel, mini-map picker, blue dot, geocoding |
 
 ---
 
 ## Data Sources
 
-| Data | Source | Requires API Key? |
+| Data | Source | Key needed? |
 |---|---|---|
-| Live FEMA shelters | [FEMA NSS OpenShelters MapServer](https://gis.fema.gov/arcgis/rest/services/NSS/OpenShelters/MapServer) | No |
-| WA historical wildfires | [Washington State Geo Portal](https://geo.wa.gov/datasets/dabefcb8f03549b49bee7564d4c3c4b5_2) | No |
+| WA DNR 2024 fire statistics | [WA DNR ArcGIS](https://fortress.wa.gov/dnr/adminsa/gisdata/lidar/DNR_Fire_Statistics/) | No |
+| 2024 wildfire perimeters | NIFC ArcGIS Feature Service | No |
+| Reverse geocoding (place names) | [Nominatim / OpenStreetMap](https://nominatim.openstreetmap.org) | No |
+| Map tiles | [CartoDB Voyager](https://carto.com/basemaps/) | No |
 
-Both APIs are free and publicly accessible — no keys or accounts needed.
+All data sources are free and publicly accessible — no API keys required.
 
-> **Note on FEMA data:** FEMA only populates their live shelter feed during active declared disasters. Outside of a disaster, the app automatically falls back to a list of known WA emergency venues (marked as "sample") so the map always has something useful to show.
+---
+
+## Git Workflow
+
+With 5 people on the team, push directly to `main` causes constant diverged branch errors. Use feature branches instead:
+
+```bash
+# Before starting work, always pull latest main first
+git checkout main
+git pull origin main
+
+# Create your own branch
+git checkout -b your-name/what-youre-doing
+
+# Work, commit, push to YOUR branch
+git add .
+git commit -m "description"
+git push origin your-name/what-youre-doing
+
+# Then open a Pull Request on GitHub to merge into main
+```
+
+**Rule: never push directly to `main`.** Always merge via Pull Request.
 
 ---
 
 ## Hackathon Context
 
-**Event:** Everybody Hacks 2026  
-**Track:** 🌍 Disaster Response and Resilience (presented by Notion@UW)  
+**Event:** Everybody Hacks 2026
+**Track:** 🌍 Disaster Response and Resilience (presented by Notion@UW)
 **Judging criteria:** Real-World Impact · Feasibility · Data Integration · Adaptability
-
-### Planned features
-- [ ] User location detection (show nearest shelter automatically)
-- [ ] Danger level zone overlay
-- [ ] Evacuation route guidance
-- [ ] Community needs reporting form
 
 ---
 
 ## Team
 
-Built by a team of 5 at Everybody Hacks 2026.
+Built by a team of 5 at Everybody Hacks 2026 — University of Washington, Seattle.
