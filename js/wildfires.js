@@ -77,9 +77,6 @@ async function loadWildfires() {
   status.textContent = `${allFires.length} historical fires loaded`;
   renderFires();
 
-  dot.className      = 'status-dot ok';
-  status.textContent = `${allFires.length} historical fires loaded`;
-  renderFires();
 }
 
 function renderFires() {
