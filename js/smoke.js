@@ -1,18 +1,10 @@
 // ── js/smoke.js ────────────────────────────────────────────
-// Generates an edge-to-edge interpolated weather radar mesh across 
-// Washington state, animated on a day-by-day time controller series.
+// Generates a static, edge-to-edge interpolated weather radar mesh 
+// across Washington State locked specifically to the July 4, 2024 simulation.
 
 let smokeLayersGroup = L.layerGroup();
-let currentDayIndex = 0;
-const TOTAL_DAYS = 5; 
 
-// Generate dates starting from today
-const DAY_LABELS = Array.from({ length: TOTAL_DAYS }, (_, i) => {
-  const d = new Date();
-  d.setDate(d.getDate() + i);
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-});
-
+// ── MAIN ENTRY POINT CALLED ON DATA LOAD ──
 function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
@@ -23,33 +15,39 @@ function renderSmoke() {
     return;
   }
 
-  // 1. Initialize the playback interface container inside the sidebar panel
-  buildTimelineUI(smokeList, stats);
+  // 1. Build a clean, static heading indicator instead of a slider playback deck
+  buildStaticUI(smokeList, stats);
 
-  // 2. Compute and paint the edge-to-edge radar mesh layer for the active day index
-  generateWeatherRadarGrid(stats, currentDayIndex);
+  // 2. Compute and paint the edge-to-edge radar mesh layer for July 4th (using index 0 as base)
+  generateWeatherRadarGrid(stats, 0);
 }
 
+// ── WEATHER RADAR ENGINE: Inverse Distance Weighting (IDW) Grid Interpolation ──
 function generateWeatherRadarGrid(stats, dayOffset) {
-  // Clear out the previous day's canvas layers cleanly
+  // Clear out the previous canvas layers cleanly
   smokeLayersGroup.clearLayers();
   map.removeLayer(smokeLayersGroup);
 
+  // Define bounding box limits spanning across the entirety of Washington State
   const latMin = 45.5, latMax = 49.0, latStep = 0.12; 
   const lonMin = -124.8, lonMax = -116.9, lonStep = 0.18;
 
+  // Scan across the geographical coordinate matrix grid lines
   for (let lat = latMin; lat <= latMax; lat += latStep) {
     for (let lon = lonMin; lon <= lonMax; lon += lonStep) {
       
       let totalWeight = 0;
       let interpolatedAQI = 0;
 
+      // Calculate the cumulative pollution drift footprint reaching this grid intersection coordinate
       stats.forEach((fire, idx) => {
         const distance = Math.sqrt(Math.pow(lat - fire.lat, 2) + Math.pow(lon - fire.lon, 2));
         
+        // Static baseline AQI variance locked onto our fixed date seed pattern
         const seedValue = (fire.lat + fire.lon + idx + dayOffset) * 100;
         const fireAQIBaseline = Math.floor((Math.abs(Math.sin(seedValue)) * 260) + 30);
         
+        // Inverse distance formula weight coefficient 
         const weight = 1 / Math.pow(distance + 0.15, 2); 
         totalWeight += weight;
         interpolatedAQI += fireAQIBaseline * weight;
@@ -58,19 +56,21 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       const finalGridAQI = Math.min(Math.floor(interpolatedAQI / totalWeight), 350);
       const metrics = getAQIMetrics(finalGridAQI);
 
+      // Skip painting grids that are entirely clean to keep map legible
       if (finalGridAQI < 35) continue; 
 
+      // Render seamless rectangular tile grid cells to cover the full canvas scale
       const bounds = [[lat, lon], [lat + latStep, lon + lonStep]];
       const gridCell = L.rectangle(bounds, {
         color: 'transparent',
         fillColor: metrics.color,
-        fillOpacity: metrics.fillOpacity * 0.42,
+        fillOpacity: metrics.fillOpacity * 0.42, // Balanced opacity contrast against dark tiles
         interactive: true
       });
 
       gridCell.bindPopup(`
         <div class="popup-title">💨 Regional Air Quality Canvas</div>
-        <div class="popup-row"><strong>Forecast Window:</strong> ${DAY_LABELS[dayOffset]}</div>
+        <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
         <div class="popup-row"><strong>Grid Air Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);
 
@@ -78,53 +78,27 @@ function generateWeatherRadarGrid(stats, dayOffset) {
     }
   }
 
+  // Only project the layers if the smoke view panel is currently selected active
   const activeTab = document.querySelector('.tab.active');
   if (activeTab && activeTab.dataset.tab === 'smoke') {
     smokeLayersGroup.addTo(map);
   }
 }
 
-function buildTimelineUI(container, stats) {
+// ── STATIC INTERFACE GENERATOR ──
+function buildStaticUI(container, stats) {
   container.innerHTML = `
-    <div style="padding: 16px; background: var(--surface2); border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border);">
-      <h3 style="font-size: 14px; margin-bottom: 8px; color: var(--text);">📅 Time-Series Outlook</h3>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <button id="btn-play-timeline" style="background: var(--accent); color: white; border: none; padding: 6px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">▶ Play Timeline</button>
-        <span id="label-active-day" style="font-size: 13px; font-weight: bold; color: var(--accent2); font-family: 'DM Mono', monospace;">${DAY_LABELS[currentDayIndex]}</span>
-      </div>
-      <input id="slider-timeline" type="range" min="0" max="${TOTAL_DAYS - 1}" value="${currentDayIndex}" style="width: 100%; accent-color: var(--accent);" />
+    <div style="padding: 14px; background: var(--surface2); border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border); text-align: center;">
+      <h3 style="font-size: 13px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">📅 Active Simulation Window</h3>
+      <span style="font-size: 16px; font-weight: bold; color: var(--accent); font-family: 'DM Sans', sans-serif;">July 4, 2024</span>
     </div>
     <div id="smoke-cards-wrapper"></div>
   `;
 
-  const slider = document.getElementById('slider-timeline');
-  slider.addEventListener('input', (e) => {
-    currentDayIndex = parseInt(e.target.value);
-    document.getElementById('label-active-day').innerText = DAY_LABELS[currentDayIndex];
-    generateWeatherRadarGrid(stats, currentDayIndex);
-  });
-
-  let playbackInterval = null;
-  const playBtn = document.getElementById('btn-play-timeline');
-  playBtn.addEventListener('click', () => {
-    if (playbackInterval) {
-      clearInterval(playbackInterval);
-      playbackInterval = null;
-      playBtn.innerText = "▶ Play Timeline";
-    } else {
-      playBtn.innerText = "⏸ Pause";
-      playbackInterval = setInterval(() => {
-        currentDayIndex = (currentDayIndex + 1) % TOTAL_DAYS;
-        slider.value = currentDayIndex;
-        document.getElementById('label-active-day').innerText = DAY_LABELS[currentDayIndex];
-        generateWeatherRadarGrid(stats, currentDayIndex);
-      }, 1250);
-    }
-  });
-
+  // Render supporting cards below the heading layout
   const cardsWrapper = document.getElementById('smoke-cards-wrapper');
   stats.forEach(f => {
-    const localSeed = (f.lat + f.lon + currentDayIndex) * 100;
+    const localSeed = (f.lat + f.lon + 0) * 100;
     const aqi = Math.floor((Math.abs(Math.sin(localSeed)) * 240) + 40);
     const metrics = getAQIMetrics(aqi);
 
