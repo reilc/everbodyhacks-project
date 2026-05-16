@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+<<<<<<< HEAD
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -569,3 +570,538 @@ loadWildfires();
 </script>
 </body>
 </html>
+=======
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Washington Map</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQPBbiR9Wgq89FVsFpc5bK0hN2v9a3s="
+      crossorigin=""
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #202124;
+        overflow: hidden;
+      }
+
+      .app {
+        height: 100vh;
+        position: relative;
+        width: 100%;
+      }
+
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+
+      .leaflet-container {
+        background: #dce8d6;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      .leaflet-container img {
+        max-width: none !important;
+      }
+
+      .leaflet-pane,
+      .leaflet-tile,
+      .leaflet-marker-icon,
+      .leaflet-marker-shadow,
+      .leaflet-tile-container,
+      .leaflet-pane > svg,
+      .leaflet-pane > canvas,
+      .leaflet-zoom-box,
+      .leaflet-image-layer,
+      .leaflet-layer {
+        left: 0;
+        position: absolute;
+        top: 0;
+      }
+
+      .leaflet-tile {
+        border: 0;
+        height: 256px;
+        max-width: none !important;
+        user-select: none;
+        width: 256px;
+      }
+
+      .leaflet-map-pane {
+        z-index: 400;
+      }
+
+      .leaflet-tile-pane {
+        z-index: 200;
+      }
+
+      .leaflet-overlay-pane {
+        z-index: 400;
+      }
+
+      .leaflet-shadow-pane {
+        z-index: 500;
+      }
+
+      .leaflet-marker-pane {
+        z-index: 600;
+      }
+
+      .leaflet-tooltip-pane {
+        z-index: 650;
+      }
+
+      .leaflet-popup-pane {
+        z-index: 700;
+      }
+
+      .leaflet-control {
+        position: relative;
+        z-index: 800;
+      }
+
+      .leaflet-top,
+      .leaflet-bottom {
+        pointer-events: none;
+        position: absolute;
+        z-index: 1000;
+      }
+
+      .leaflet-top {
+        top: 0;
+      }
+
+      .leaflet-right {
+        right: 0;
+      }
+
+      .leaflet-bottom {
+        bottom: 0;
+      }
+
+      .leaflet-left {
+        left: 0;
+      }
+
+      .leaflet-control {
+        clear: both;
+        float: left;
+        pointer-events: auto;
+      }
+
+      .leaflet-control-zoom {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 6px 22px rgba(60, 64, 67, 0.2);
+        margin-bottom: 18px;
+        margin-right: 18px;
+        overflow: hidden;
+      }
+
+      .leaflet-control-zoom a {
+        color: #202124;
+        display: block;
+        font-size: 22px;
+        font-weight: 700;
+        height: 32px;
+        line-height: 32px;
+        text-align: center;
+        text-decoration: none;
+        width: 32px;
+      }
+
+      .leaflet-control-zoom a + a {
+        border-top: 1px solid #dadce0;
+      }
+
+      .leaflet-popup {
+        position: absolute;
+        text-align: center;
+      }
+
+      .leaflet-popup-content-wrapper {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 18px rgba(60, 64, 67, 0.25);
+        padding: 10px 12px;
+      }
+
+      .leaflet-popup-tip-container {
+        display: none;
+      }
+
+      .search-panel {
+        display: grid;
+        gap: 10px;
+        left: 18px;
+        max-width: calc(100vw - 36px);
+        position: absolute;
+        top: 18px;
+        width: 390px;
+        z-index: 1100;
+      }
+
+      .search-box {
+        align-items: center;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 6px 22px rgba(60, 64, 67, 0.32);
+        display: grid;
+        gap: 10px;
+        grid-template-columns: auto 1fr auto auto;
+        min-height: 56px;
+        padding: 8px 8px 8px 16px;
+      }
+
+      .search-icon {
+        color: #1a73e8;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      input {
+        border: 0;
+        font: inherit;
+        font-size: 16px;
+        outline: 0;
+        width: 100%;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .search-box button {
+        background: #1a73e8;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 10px 13px;
+      }
+
+      .search-box .reset-button {
+        background: #f1f3f4;
+        color: #202124;
+      }
+
+      .results {
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 8px;
+        box-shadow: 0 6px 22px rgba(60, 64, 67, 0.2);
+        display: grid;
+        max-height: 260px;
+        overflow: auto;
+        padding: 6px;
+      }
+
+      .results:empty {
+        display: none;
+      }
+
+      .result {
+        background: transparent;
+        border-radius: 7px;
+        display: grid;
+        gap: 3px;
+        padding: 11px 12px;
+        text-align: left;
+      }
+
+      .result:hover,
+      .result.active {
+        background: #e8f0fe;
+      }
+
+      .result strong {
+        font-size: 15px;
+      }
+
+      .result span {
+        color: #5f6368;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="search-panel" aria-label="Search Washington map">
+        <form class="search-box" id="search-form">
+          <span class="search-icon" aria-hidden="true">S</span>
+          <input
+            id="search-input"
+            aria-label="Search Washington places"
+            placeholder="Search Washington"
+            autocomplete="off"
+          />
+          <button type="submit">Search</button>
+          <button class="reset-button" id="reset-map" type="button">Reset</button>
+        </form>
+        <div class="results" id="results" aria-label="Washington place suggestions"></div>
+      </section>
+      <div id="map"></div>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script>
+      const places = [
+        { name: "Aberdeen", coords: [46.9754, -123.8157], note: "Coastal community near forested lands" },
+        { name: "Anacortes", coords: [48.5126, -122.6127], note: "Island and coastal access community" },
+        { name: "Arlington", coords: [48.1987, -122.1251], note: "Stillaguamish valley wildland edge" },
+        { name: "Battle Ground", coords: [45.7809, -122.5334], note: "Southwest Washington wildland edge" },
+        { name: "Bellevue", coords: [47.6101, -122.2015], note: "Eastside city center" },
+        { name: "Bellingham", coords: [48.7519, -122.4787], note: "Northwest college town" },
+        { name: "Bonney Lake", coords: [47.177, -122.1865], note: "Foothills community near forest interface" },
+        { name: "Bremerton", coords: [47.5673, -122.6326], note: "Kitsap Peninsula city" },
+        { name: "Brewster", coords: [48.0954, -119.7806], note: "Okanogan valley fire-prone area" },
+        { name: "Bridgeport", coords: [48.0082, -119.6712], note: "Columbia River community near shrub-steppe" },
+        { name: "Buckley", coords: [47.1632, -122.0268], note: "Foothills wildfire smoke and interface area" },
+        { name: "Burien", coords: [47.4704, -122.3468], note: "South King County city" },
+        { name: "Camas", coords: [45.5871, -122.3995], note: "Columbia Gorge edge community" },
+        { name: "Cashmere", coords: [47.5223, -120.4698], note: "Wenatchee Valley fire-prone community" },
+        { name: "Chelan", coords: [47.8408, -120.0168], note: "Lake Chelan wildfire-prone area" },
+        { name: "Cheney", coords: [47.4874, -117.5758], note: "Eastern Washington grassland-fire area" },
+        { name: "Cle Elum", coords: [47.1954, -120.9392], note: "Kittitas County forest interface" },
+        { name: "Colfax", coords: [46.8802, -117.3643], note: "Palouse agricultural fire area" },
+        { name: "Colville", coords: [48.5466, -117.9055], note: "Northeast Washington forest community" },
+        { name: "Connell", coords: [46.6635, -118.8611], note: "Columbia Basin grassland-fire area" },
+        { name: "Coulee Dam", coords: [47.9654, -118.9761], note: "North central Washington community" },
+        { name: "Darrington", coords: [48.2554, -121.6018], note: "Cascade foothills forest community" },
+        { name: "Deer Park", coords: [47.9543, -117.4769], note: "Spokane County wildland interface" },
+        { name: "East Wenatchee", coords: [47.4157, -120.2931], note: "Columbia River valley fire-prone area" },
+        { name: "Eatonville", coords: [46.8673, -122.2665], note: "Mount Rainier foothills community" },
+        { name: "Ellensburg", coords: [46.9965, -120.5478], note: "Kittitas Valley wind and grass-fire area" },
+        { name: "Elma", coords: [47.0034, -123.4088], note: "Southwest forest edge community" },
+        { name: "Enumclaw", coords: [47.2043, -121.9915], note: "Cascade foothills interface" },
+        { name: "Ephrata", coords: [47.3176, -119.5537], note: "Columbia Basin wildfire smoke area" },
+        { name: "Everett", coords: [47.979, -122.2021], note: "Snohomish County urban center" },
+        { name: "Federal Way", coords: [47.3223, -122.3126], note: "South Puget Sound city" },
+        { name: "Forks", coords: [47.9504, -124.3855], note: "Olympic Peninsula forest community" },
+        { name: "George", coords: [47.0799, -119.8551], note: "Columbia Basin grassland-fire area" },
+        { name: "Gold Bar", coords: [47.8568, -121.6954], note: "Skykomish River forest interface" },
+        { name: "Grand Coulee", coords: [47.9415, -119.0033], note: "North central Washington fire-prone area" },
+        { name: "Grandview", coords: [46.2507, -119.9017], note: "Yakima Valley smoke exposure area" },
+        { name: "Granger", coords: [46.3421, -120.1873], note: "Yakima Valley agricultural community" },
+        { name: "Hoquiam", coords: [46.9809, -123.8893], note: "Coastal forest community" },
+        { name: "Issaquah", coords: [47.5301, -122.0326], note: "Eastside foothills interface" },
+        { name: "Kahlotus", coords: [46.6435, -118.5555], note: "Dryland grass-fire area" },
+        { name: "Kelso", coords: [46.1468, -122.9084], note: "Lower Columbia forest edge" },
+        { name: "Kennewick", coords: [46.2112, -119.1372], note: "Tri-Cities shrub-steppe area" },
+        { name: "Kent", coords: [47.3809, -122.2348], note: "Green River valley city" },
+        { name: "Kettle Falls", coords: [48.6107, -118.0558], note: "Northeast forest community" },
+        { name: "Kittitas", coords: [46.9832, -120.417], note: "Kittitas Valley grass-fire area" },
+        { name: "La Center", coords: [45.8623, -122.6712], note: "Clark County wildland edge" },
+        { name: "Lake Chelan", coords: [47.8408, -120.0168], note: "Lake and foothills fire-prone area" },
+        { name: "Leavenworth", coords: [47.5962, -120.6615], note: "Cascade foothills wildfire-prone area" },
+        { name: "Liberty Lake", coords: [47.6759, -117.1182], note: "Spokane Valley wildland interface" },
+        { name: "Longview", coords: [46.1382, -122.9382], note: "Lower Columbia River city" },
+        { name: "Manson", coords: [47.8846, -120.1581], note: "Lake Chelan fire-prone community" },
+        { name: "Marysville", coords: [48.0518, -122.1771], note: "Snohomish County city" },
+        { name: "Mattawa", coords: [46.7379, -119.9026], note: "Columbia River shrub-steppe community" },
+        { name: "Methow", coords: [48.129, -120.0084], note: "Methow Valley wildfire-prone community" },
+        { name: "Monroe", coords: [47.8554, -121.9709], note: "Snohomish County foothills edge" },
+        { name: "Moses Lake", coords: [47.1301, -119.2781], note: "Columbia Basin fire and smoke area" },
+        { name: "Mount Vernon", coords: [48.4212, -122.334], note: "Skagit Valley city" },
+        { name: "Naches", coords: [46.7307, -120.6998], note: "Yakima foothills forest interface" },
+        { name: "Newport", coords: [48.1796, -117.0433], note: "Northeast forest community" },
+        { name: "North Bend", coords: [47.4957, -121.7868], note: "Cascade foothills interface" },
+        { name: "Oak Harbor", coords: [48.2932, -122.6432], note: "Whidbey Island community" },
+        { name: "Okanogan", coords: [48.3613, -119.5834], note: "Okanogan County wildfire-prone area" },
+        { name: "Omak", coords: [48.4109, -119.5276], note: "Okanogan Valley wildfire-prone area" },
+        { name: "Olympia", coords: [47.0379, -122.9007], note: "Washington state capital" },
+        { name: "Oroville", coords: [48.939, -119.4356], note: "Canadian border wildfire-prone community" },
+        { name: "Pasco", coords: [46.2396, -119.1006], note: "Tri-Cities shrub-steppe area" },
+        { name: "Pateros", coords: [48.0524, -119.9034], note: "Carlton Complex affected area" },
+        { name: "Port Angeles", coords: [48.1181, -123.4307], note: "Olympic Peninsula city" },
+        { name: "Port Townsend", coords: [48.117, -122.7604], note: "Northeast Olympic Peninsula community" },
+        { name: "Pullman", coords: [46.7298, -117.1817], note: "Palouse smoke and grass-fire area" },
+        { name: "Puyallup", coords: [47.1854, -122.2929], note: "Pierce County city near foothills" },
+        { name: "Quincy", coords: [47.2343, -119.8526], note: "Columbia Basin grassland-fire area" },
+        { name: "Rainier", coords: [46.8882, -122.6885], note: "Thurston County forest edge" },
+        { name: "Raymond", coords: [46.6865, -123.7329], note: "Willapa forest community" },
+        { name: "Renton", coords: [47.4829, -122.2171], note: "South Lake Washington city" },
+        { name: "Republic", coords: [48.6482, -118.7378], note: "Northeast Washington forest community" },
+        { name: "Richland", coords: [46.2857, -119.2845], note: "Tri-Cities shrub-steppe area" },
+        { name: "Ritzville", coords: [47.1274, -118.3791], note: "Eastern Washington grassland-fire area" },
+        { name: "Roslyn", coords: [47.2235, -120.9937], note: "Kittitas County forest interface" },
+        { name: "Royal City", coords: [46.9007, -119.6306], note: "Columbia Basin agricultural community" },
+        { name: "Seattle", coords: [47.6062, -122.3321], note: "Puget Sound tech hub" },
+        { name: "Sedro-Woolley", coords: [48.5039, -122.2361], note: "North Cascades gateway community" },
+        { name: "Selah", coords: [46.654, -120.5301], note: "Yakima foothills fire-prone area" },
+        { name: "Shelton", coords: [47.2151, -123.1007], note: "Mason County forest community" },
+        { name: "Skykomish", coords: [47.7109, -121.3601], note: "Cascade corridor forest community" },
+        { name: "Snohomish", coords: [47.9129, -122.0982], note: "Snohomish River valley community" },
+        { name: "Snoqualmie", coords: [47.5287, -121.8254], note: "Cascade foothills interface" },
+        { name: "Soap Lake", coords: [47.3899, -119.4906], note: "Columbia Basin fire and smoke area" },
+        { name: "Spokane", coords: [47.6588, -117.426], note: "Eastern Washington metro" },
+        { name: "Spokane Valley", coords: [47.6732, -117.2394], note: "Wildland interface and smoke exposure area" },
+        { name: "Stevenson", coords: [45.6957, -121.8845], note: "Columbia Gorge forest community" },
+        { name: "Sunnyside", coords: [46.3237, -120.0087], note: "Yakima Valley agricultural community" },
+        { name: "Tacoma", coords: [47.2529, -122.4443], note: "South Sound waterfront" },
+        { name: "Tonasket", coords: [48.7052, -119.4395], note: "Okanogan Highlands wildfire-prone area" },
+        { name: "Toppenish", coords: [46.3774, -120.3087], note: "Yakima Valley community" },
+        { name: "Twisp", coords: [48.3635, -120.1223], note: "Methow Valley wildfire-prone community" },
+        { name: "Union Gap", coords: [46.5574, -120.4751], note: "Yakima Valley community" },
+        { name: "Vancouver", coords: [45.628, -122.6739], note: "Columbia River city" },
+        { name: "Walla Walla", coords: [46.0646, -118.343], note: "Southeast Washington smoke exposure area" },
+        { name: "Warden", coords: [46.9676, -119.0397], note: "Columbia Basin agricultural community" },
+        { name: "Washougal", coords: [45.5826, -122.3534], note: "Columbia Gorge edge community" },
+        { name: "Wenatchee", coords: [47.4235, -120.3103], note: "Central Washington wildfire-prone area" },
+        { name: "White Salmon", coords: [45.7276, -121.4865], note: "Columbia Gorge forest interface" },
+        { name: "Winlock", coords: [46.4915, -122.9379], note: "Lewis County forest edge" },
+        { name: "Winthrop", coords: [48.4779, -120.1862], note: "Methow Valley wildfire-prone community" },
+        { name: "Woodinville", coords: [47.7543, -122.1635], note: "Eastside forest edge community" },
+        { name: "Yakima", coords: [46.6021, -120.5059], note: "Central Washington valley" },
+        { name: "Yelm", coords: [46.942, -122.6059], note: "South Puget Sound forest edge" },
+        { name: "Zillah", coords: [46.4021, -120.262], note: "Yakima Valley agricultural community" },
+      ];
+
+      const washingtonBounds = [
+        [45.45, -124.95],
+        [49.05, -116.85],
+      ];
+
+      const washingtonOutline = [
+        [49.0, -123.32],
+        [48.78, -123.02],
+        [48.52, -123.25],
+        [48.38, -124.72],
+        [47.9, -124.73],
+        [47.25, -124.55],
+        [46.28, -124.05],
+        [46.18, -123.2],
+        [45.54, -122.78],
+        [45.54, -117.48],
+        [45.94, -117.03],
+        [49.0, -117.03],
+        [49.0, -123.32],
+      ];
+
+      const map = L.map("map", {
+        preferCanvas: true,
+        scrollWheelZoom: "center",
+        wheelDebounceTime: 60,
+        wheelPxPerZoomLevel: 100,
+        zoomAnimation: true,
+        zoomControl: false,
+        maxBounds: [
+          [44.9, -125.2],
+          [49.2, -116.6],
+        ],
+        maxZoom: 12,
+        minZoom: 6,
+      });
+
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+
+      L.polygon(washingtonOutline, {
+        color: "#1a73e8",
+        fillColor: "#1a73e8",
+        fillOpacity: 0.08,
+        opacity: 0.9,
+        weight: 4,
+      }).addTo(map);
+
+      map.fitBounds(washingtonBounds, { padding: [34, 34] });
+
+      const input = document.querySelector("#search-input");
+      const form = document.querySelector("#search-form");
+      const results = document.querySelector("#results");
+      const resetMapButton = document.querySelector("#reset-map");
+      let selectedMarker = null;
+
+      function clearSelectedMarker() {
+        if (selectedMarker) {
+          selectedMarker.remove();
+          selectedMarker = null;
+        }
+      }
+
+      function selectPlace(place) {
+        clearSelectedMarker();
+        input.value = place.name;
+        selectedMarker = L.circleMarker(place.coords, {
+          color: "#1a73e8",
+          fillColor: "#1a73e8",
+          fillOpacity: 0.95,
+          radius: 10,
+          weight: 4,
+        })
+          .addTo(map)
+          .bindPopup(`<strong>${place.name}</strong><br>${place.note}`);
+        map.flyTo(place.coords, 9, { duration: 0.55 });
+        selectedMarker.openPopup();
+        renderResults();
+      }
+
+      function filteredPlaces() {
+        const query = input.value.trim().toLowerCase();
+        if (!query) return [];
+        return places.filter((place) => place.name.toLowerCase().startsWith(query));
+      }
+
+      function renderResults() {
+        results.innerHTML = "";
+        filteredPlaces().slice(0, 40).forEach((place) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "result";
+          button.innerHTML = `<strong>${place.name}</strong><span>${place.note}</span>`;
+          button.addEventListener("click", () => selectPlace(place));
+          results.appendChild(button);
+        });
+      }
+
+      input.addEventListener("input", renderResults);
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const firstResult = filteredPlaces()[0];
+        if (firstResult) selectPlace(firstResult);
+      });
+
+      resetMapButton.addEventListener("click", () => {
+        input.value = "";
+        clearSelectedMarker();
+        map.closePopup();
+        map.fitBounds(washingtonBounds, { padding: [34, 34] });
+        renderResults();
+      });
+
+      window.addEventListener("resize", () => {
+        map.invalidateSize();
+      });
+
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+
+      renderResults();
+    </script>
+  </body>
+</html>
+>>>>>>> d350c389413321bde30d3000d06a597d6c923a0b
