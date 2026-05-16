@@ -5,83 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Wildfire Community Response Hub</title>
 
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <!-- Our styles -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div class="app">
-
-  <!-- ── Sidebar ── -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <div class="logo-icon">🔥</div>
+        <div class="logo-icon">F</div>
         <div>
           <h1>Wildfire Community<br>Response Hub</h1>
-          <p>Washington State — Live Data</p>
+          <p>Washington State - 2024 Data</p>
         </div>
       </div>
       <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input id="search-input" placeholder="Search shelters or fires…" autocomplete="off" />
+        <span class="search-icon">S</span>
+        <input id="search-input" placeholder="Search a Washington city..." autocomplete="off" />
       </div>
     </div>
 
-    <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" data-tab="shelters">🏕 Shelters</button>
-      <button class="tab" data-tab="fires">🔥 Wildfires</button>
+      <button class="tab active" data-tab="shelters">Shelters</button>
+      <button class="tab" data-tab="fires">Wildfires</button>
     </div>
 
-    <!-- Shelters Panel -->
     <div class="panel active" id="panel-shelters">
       <div class="status-bar">
-        <div class="status-dot loading" id="shelter-dot"></div>
-        <span id="shelter-status">Loading FEMA shelter data…</span>
-      </div>
-      <div class="filter-row">
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="Open">Open</button>
-        <button class="filter-btn" data-filter="Closed">Closed</button>
+        <div class="status-dot ok" id="shelter-dot"></div>
+        <span id="shelter-status">Type a Washington city to find nearby resources</span>
       </div>
       <div class="card-list" id="shelter-list">
-        <div class="empty"><div class="icon">⏳</div>Fetching shelters…</div>
+        <div class="empty"><div class="icon">Search</div>Type a Washington city to find nearby shelter/resource places.</div>
       </div>
     </div>
 
-    <!-- Fires Panel -->
     <div class="panel" id="panel-fires">
       <div class="status-bar">
         <div class="status-dot loading" id="fire-dot"></div>
-        <span id="fire-status">Loading WA wildfire data…</span>
+        <span id="fire-status">Loading real 2024 WA wildfire perimeters...</span>
       </div>
       <div class="filter-row" id="year-filters">
-        <button class="filter-btn fire-filter active" data-year="all">All Years</button>
-        <button class="filter-btn fire-filter" data-year="2024">2024</button>
+        <button class="filter-btn fire-filter" data-year="all">All Years</button>
+        <button class="filter-btn fire-filter active" data-year="2024">2024</button>
         <button class="filter-btn fire-filter" data-year="2023">2023</button>
         <button class="filter-btn fire-filter" data-year="2022">2022</button>
         <button class="filter-btn fire-filter" data-year="2021">2021</button>
       </div>
       <div class="card-list" id="fire-list">
-        <div class="empty"><div class="icon">⏳</div>Fetching wildfire data…</div>
+        <div class="empty"><div class="icon">Fire</div>Fetching wildfire data...</div>
       </div>
     </div>
   </aside>
 
-  <!-- ── Map ── -->
   <div id="map"></div>
-
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<!-- Our scripts — order matters! -->
-<script src="aqi-service.js"></script>
+<script src="js/aqi-service.js"></script>
 <script src="js/config.js"></script>
 <script src="js/map.js"></script>
 <script src="js/shelters.js"></script>

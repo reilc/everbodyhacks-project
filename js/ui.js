@@ -1,8 +1,6 @@
-// ── ui.js ──────────────────────────────────────────────────
-// Handles all user interactions: tab switching, filter buttons,
-// search input. Also boots the app by calling the data loaders.
+// ui.js
+// User interactions: tabs, wildfire year filters, city search, and app boot.
 
-// ── Tab switching ──
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -12,17 +10,6 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// ── Shelter status filters (All / Open / Closed) ──
-document.querySelectorAll('[data-filter]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    shelterFilter = btn.dataset.filter;
-    renderShelters();
-  });
-});
-
-// ── Wildfire year filters ──
 document.querySelectorAll('[data-year]').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('[data-year]').forEach(b => b.classList.remove('active'));
@@ -32,13 +19,35 @@ document.querySelectorAll('[data-year]').forEach(btn => {
   });
 });
 
-// ── Search — filters both shelter cards and fire cards live ──
-document.getElementById('search-input').addEventListener('input', e => {
+const searchInput = document.getElementById('search-input');
+
+searchInput.addEventListener('input', e => {
   searchQuery = e.target.value.trim();
+
+  const stillSelectedCity =
+    selectedCity && selectedCity.name.toLowerCase() === searchQuery.toLowerCase();
+
+  if (!stillSelectedCity) {
+    selectedCity = null;
+    allShelters = [];
+    shelterMarkers.forEach(marker => map.removeLayer(marker));
+    shelterMarkers = [];
+
+    if (selectedCityMarker) {
+      map.removeLayer(selectedCityMarker);
+      selectedCityMarker = null;
+    }
+  }
+
   renderShelters();
-  renderFires();
 });
 
-// ── Boot — fetch all data on page load ──
-loadShelters();
+searchInput.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+
+  const city = matchingCities()[0];
+  if (city) selectCity(city);
+});
+
+renderShelters();
 loadWildfires();
