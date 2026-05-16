@@ -8,10 +8,9 @@ window.map = map;
 // Put zoom controls in bottom-right so they don't clash with the sidebar
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// Dark CartoDB tile layer
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap &copy; CARTO',
-  subdomains: 'abcd',
+// Light map tiles improve text contrast and show waterways in blue.
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
   maxZoom: 19,
 }).addTo(map);
 
@@ -28,8 +27,8 @@ const WA_OUTLINE = [
 ];
 
 L.polygon(WA_OUTLINE, {
-  color: '#4caf72',
-  fillColor: '#4caf72',
-  fillOpacity: 0.05,
-  weight: 2,
+  color: '#267a4f',
+  fillColor: '#267a4f',
+  fillOpacity: 0.03,
+  weight: 3,
 }).addTo(map);

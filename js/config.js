@@ -369,7 +369,7 @@ const COMMUNITY_RESOURCE_SITES = [
   {
     name: 'Goldendale Community Food Bank',
     type: '2024 TEFAP food pantry',
-    address: 'Goldendale, WA',
+    address: '104 E Simcoe Dr, Goldendale, WA 98620',
     city: 'Goldendale',
     lat: 45.8207,
     lon: -120.8217,
@@ -525,7 +525,7 @@ const COMMUNITY_RESOURCE_SITES = [
   {
     name: 'Chelan Valley Hope',
     type: '2024 community resource center',
-    address: 'Chelan, WA',
+    address: '417 S Bradley St, Chelan, WA 98816',
     city: 'Chelan',
     lat: 47.8408,
     lon: -120.0168,
@@ -549,7 +549,7 @@ const COMMUNITY_RESOURCE_SITES = [
   {
     name: 'Community Cupboard',
     type: '2024 food pantry',
-    address: 'Leavenworth, WA',
+    address: '219 14th St, Leavenworth, WA 98826',
     city: 'Leavenworth',
     lat: 47.5962,
     lon: -120.6615,
@@ -657,7 +657,7 @@ const COMMUNITY_RESOURCE_SITES = [
   {
     name: 'Nourish Pierce County',
     type: '2024 food bank network',
-    address: 'Tacoma, WA',
+    address: '1702 S 72nd St Ste E, Tacoma, WA 98408',
     city: 'Tacoma',
     lat: 47.2529,
     lon: -122.4443,
@@ -681,7 +681,7 @@ const COMMUNITY_RESOURCE_SITES = [
   {
     name: 'Volunteers of America Everett Food Bank',
     type: '2024 TEFAP food bank',
-    address: 'Everett, WA',
+    address: '1230 Broadway, Everett, WA 98201',
     city: 'Everett',
     lat: 47.9789,
     lon: -122.2021,
@@ -705,7 +705,7 @@ const COMMUNITY_RESOURCE_SITES = [
   {
     name: 'Community Services of Moses Lake',
     type: '2024 TEFAP food/resource agency',
-    address: 'Moses Lake, WA',
+    address: '9299 Beacon Rd NE, Moses Lake, WA 98837',
     city: 'Moses Lake',
     lat: 47.1301,
     lon: -119.2781,

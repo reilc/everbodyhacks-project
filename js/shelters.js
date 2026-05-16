@@ -62,6 +62,7 @@ function selectCity(city) {
 function loadResourcesForCity(city) {
   const wildfireResources = HISTORICAL_2024_SHELTERS
     .filter(shelter => wasActiveOnSimulationDate(shelter))
+    .filter(hasFullAddress)
     .map(shelter => ({
       ...shelter,
       dataset: 'Verified wildfire response',
@@ -69,6 +70,7 @@ function loadResourcesForCity(city) {
     }));
 
   const communityResources = COMMUNITY_RESOURCE_SITES
+    .filter(hasFullAddress)
     .map(resource => ({
       ...resource,
       fire: 'Food / basic needs resource',
@@ -108,6 +110,7 @@ function loadResourcesForFire(fire) {
 
   const wildfireResources = HISTORICAL_2024_SHELTERS
     .filter(resource => wasActiveOnSimulationDate(resource))
+    .filter(hasFullAddress)
     .map(resource => ({
       ...resource,
       dataset: 'Verified wildfire response',
@@ -115,6 +118,7 @@ function loadResourcesForFire(fire) {
     }));
 
   const communityResources = COMMUNITY_RESOURCE_SITES
+    .filter(hasFullAddress)
     .map(resource => ({
       ...resource,
       fire: fire.name,
@@ -149,6 +153,10 @@ function wasActiveOnSimulationDate(shelter) {
   return SIMULATION_FIRE_DATE >= shelter.activeStart && SIMULATION_FIRE_DATE <= shelter.activeEnd;
 }
 
+function hasFullAddress(resource) {
+  return /^\d+\s+/.test(resource.address || '');
+}
+
 function renderShelters() {
   const list = document.getElementById('resource-list');
 
@@ -163,7 +171,7 @@ function renderShelters() {
     const activeCount = [
       ...HISTORICAL_2024_SHELTERS,
       ...COMMUNITY_RESOURCE_SITES,
-    ].filter(wasActiveOnSimulationDate).length;
+    ].filter(wasActiveOnSimulationDate).filter(hasFullAddress).length;
     setShelterStatus('ok', `${activeCount} resources included for the ${SIMULATION_FIRE_DATE_LABEL} simulation`);
     list.innerHTML = `<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed food banks, resource centers, and documented wildfire shelters for the ${SIMULATION_FIRE_DATE_LABEL} simulation.</div>`;
     return;
@@ -213,8 +221,7 @@ function renderResourceCards(list) {
       </div>
       <div class="card-detail">
         <strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi<br>
-        <strong>Address:</strong> ${shelter.address}<br>
-        <strong>What they have:</strong> ${formatResourceOffering(shelter)}
+        <strong>Address:</strong> ${shelter.address}
       </div>`;
 
     card.addEventListener('click', () => map.flyTo([shelter.lat, shelter.lon], 13, { duration: 0.8 }));
@@ -232,19 +239,10 @@ function renderResourceCards(list) {
       <div class="popup-title">${shelter.name}</div>
       <div class="popup-row"><strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi</div>
       <div class="popup-row"><strong>Address:</strong> ${shelter.address}</div>
-      <div class="popup-row"><strong>What they have:</strong> ${formatResourceOffering(shelter)}</div>
     `);
 
     shelterMarkers.push(marker);
   });
-}
-
-function formatResourceOffering(shelter) {
-  if (shelter.dataset === 'Verified wildfire response') {
-    return `${shelter.type} for ${shelter.fire}`;
-  }
-
-  return shelter.type.replace(/^2024\s+/i, '');
 }
 
 function renderCityMatches(list) {
