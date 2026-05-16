@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wildfire Community Response Hub</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1a12;
+      --surface: #162019;
+      --surface2: #1e2e22;
+      --border: #2a3d2e;
+      --accent: #ff6b35;
+      --accent2: #4caf72;
+      --danger: #ff4444;
+      --warning: #ffb830;
+      --text: #e8f0ea;
+      --text-muted: #7a9980;
+      --shelter: #4caf72;
+      --fire: #ff6b35;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app { display: flex; height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 360px;
+      min-width: 360px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    .sidebar-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo h1 { font-size: 15px; font-weight: 700; line-height: 1.2; }
+    .logo p { font-size: 11px; color: var(--text-muted); }
+
+    /* search */
+    .search-wrap { position: relative; }
+    .search-wrap input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px 10px 36px;
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent2); }
+    .search-icon {
+      position: absolute; left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted); font-size: 14px; pointer-events: none;
+    }
+
+    /* tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+    }
+    .tab {
+      flex: 1; padding: 12px 0; font-size: 13px; font-weight: 600;
+      color: var(--text-muted); background: none; border: none;
+      border-bottom: 2px solid transparent; cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    /* content */
+    .panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+    .panel.active { display: flex; }
+
+    /* status bar */
+    .status-bar {
+      padding: 10px 20px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-muted); flex-shrink: 0;
+    }
+    .status-dot.loading { background: var(--warning); animation: pulse 1s infinite; }
+    .status-dot.ok { background: var(--accent2); }
+    .status-dot.err { background: var(--danger); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* cards */
+    .card-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .card:hover { border-color: var(--accent2); transform: translateX(2px); }
+    .card.fire:hover { border-color: var(--fire); }
+    .card-title {
+      font-size: 13px; font-weight: 700; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .card-title .badge {
+      font-size: 10px; font-weight: 500; padding: 2px 7px;
+      border-radius: 20px; font-family: 'DM Mono', monospace;
+    }
+    .badge.open { background: rgba(76,175,114,0.2); color: var(--accent2); }
+    .badge.fire { background: rgba(255,107,53,0.2); color: var(--fire); }
+    .card-detail { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .card-detail strong { color: var(--text); font-weight: 500; }
+
+    /* empty / error state */
+    .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+    .empty .icon { font-size: 32px; margin-bottom: 8px; }
+
+    /* filter row */
+    .filter-row {
+      padding: 10px 20px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--border);
+    }
+    .filter-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+      font: inherit; font-size: 12px; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .filter-btn.fire-filter.active { background: var(--fire); border-color: var(--fire); }
+
+    /* map */
+    #map { flex: 1; }
+    .leaflet-container { background: #1a2a1e; }
+    .leaflet-popup-content-wrapper {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      color: var(--text);
+    }
+    .leaflet-popup-tip { background: var(--surface); }
+    .popup-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+    .popup-row { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .popup-row strong { color: var(--text); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🔥</div>
+        <div>
+          <h1>Wildfire Community<br>Response Hub</h1>
+          <p>Washington State — Live Data</p>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="search-input" placeholder="Search shelters or fires…" autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="shelters">🏕 Shelters</button>
+      <button class="tab" data-tab="fires">🔥 Wildfires</button>
+    </div>
+
+    <!-- Shelters Panel -->
+    <div class="panel active" id="panel-shelters">
+      <div class="status-bar">
+        <div class="status-dot loading" id="shelter-dot"></div>
+        <span id="shelter-status">Loading FEMA shelter data…</span>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="Open">Open</button>
+        <button class="filter-btn" data-filter="Closed">Closed</button>
+      </div>
+      <div class="card-list" id="shelter-list">
+        <div class="empty"><div class="icon">⏳</div>Fetching shelters…</div>
+      </div>
+    </div>
+
+    <!-- Fires Panel -->
+    <div class="panel" id="panel-fires">
+      <div class="status-bar">
+        <div class="status-dot loading" id="fire-dot"></div>
+        <span id="fire-status">Loading WA wildfire data…</span>
+      </div>
+      <div class="filter-row" id="year-filters">
+        <button class="filter-btn fire-filter active" data-year="all">All Years</button>
+        <button class="filter-btn fire-filter" data-year="2024">2024</button>
+        <button class="filter-btn fire-filter" data-year="2023">2023</button>
+        <button class="filter-btn fire-filter" data-year="2022">2022</button>
+        <button class="filter-btn fire-filter" data-year="2021">2021</button>
+      </div>
+      <div class="card-list" id="fire-list">
+        <div class="empty"><div class="icon">⏳</div>Fetching wildfire data…</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Map ── -->
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+// ── Map setup ──────────────────────────────────────────────
+const map = L.map('map', { zoomControl: false });
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+const waBounds = [[45.45, -124.95], [49.05, -116.85]];
+map.fitBounds(waBounds, { padding: [20, 20] });
+
+// Washington outline
+const waOutline = [[49.0,-123.32],[48.78,-123.02],[48.52,-123.25],[48.38,-124.72],
+  [47.9,-124.73],[47.25,-124.55],[46.28,-124.05],[46.18,-123.2],[45.54,-122.78],
+  [45.54,-117.48],[45.94,-117.03],[49.0,-117.03],[49.0,-123.32]];
+L.polygon(waOutline, { color:'#4caf72', fillColor:'#4caf72', fillOpacity:0.05, weight:2 }).addTo(map);
+
+// ── State ──────────────────────────────────────────────────
+let allShelters = [], allFires = [];
+let shelterMarkers = [], fireMarkers = [];
+let shelterFilter = 'all', fireYearFilter = 'all';
+let searchQuery = '';
+
+// ── Fallback shelter data (used when FEMA has no active shelters) ──
+const FALLBACK_SHELTERS = [
+  { name: 'Seattle Center', address: '305 Harrison St, Seattle, WA 98109', status: 'Open', capacity: 800, lat: 47.6205, lon: -122.3493, mock: true },
+  { name: 'CenturyLink Field Event Center', address: '800 Occidental Ave S, Seattle, WA 98134', status: 'Open', capacity: 1200, lat: 47.5952, lon: -122.3316, mock: true },
+  { name: 'Tacoma Dome', address: '2727 E D St, Tacoma, WA 98421', status: 'Open', capacity: 2000, lat: 47.2354, lon: -122.4281, mock: true },
+  { name: 'Spokane Convention Center', address: '334 W Spokane Falls Blvd, Spokane, WA 99201', status: 'Open', capacity: 1500, lat: 47.6588, lon: -117.4260, mock: true },
+  { name: 'Yakima SunDome', address: '1301 S Fair Ave, Yakima, WA 98901', status: 'Open', capacity: 900, lat: 46.5995, lon: -120.5322, mock: true },
+  { name: 'Bellingham Civic Field', address: '1001 N State St, Bellingham, WA 98225', status: 'Open', capacity: 500, lat: 48.7519, lon: -122.4787, mock: true },
+  { name: 'Wenatchee Convention Center', address: '121 N Wenatchee Ave, Wenatchee, WA 98801', status: 'Open', capacity: 400, lat: 47.4235, lon: -120.3103, mock: true },
+  { name: 'Kennewick Toyota Center', address: '7000 W Grandridge Blvd, Kennewick, WA 99336', status: 'Open', capacity: 700, lat: 46.2087, lon: -119.2248, mock: true },
+  { name: 'Olympia Timberland Library', address: '313 8th Ave SE, Olympia, WA 98501', status: 'Open', capacity: 300, lat: 47.0379, lon: -122.9007, mock: true },
+  { name: 'Everett Community College', address: '2000 Tower St, Everett, WA 98201', status: 'Open', capacity: 600, lat: 47.9790, lon: -122.2021, mock: true },
+];
+
+// ── FEMA Shelters API ──────────────────────────────────────
+const FEMA_URL = 'https://gis.fema.gov/arcgis/rest/services/NSS/OpenShelters/MapServer/0/query';
+
+async function loadShelters() {
+  const dot = document.getElementById('shelter-dot');
+  const status = document.getElementById('shelter-status');
+  try {
+    const params = new URLSearchParams({
+      where: "state = 'WA'",
+      outFields: 'SHELTER_NAME,address_1,city,state,zip,shelter_status,evacuation_capacity',
+      returnGeometry: 'true',
+      outSR: '4326',
+      f: 'json',
+      resultRecordCount: '500'
+    });
+    const res = await fetch(`${FEMA_URL}?${params}`);
+    const data = await res.json();
+
+    allShelters = (data.features || [])
+      .filter(f => f.geometry)
+      .map(f => ({
+        name: f.attributes.SHELTER_NAME || 'Unnamed Shelter',
+        address: [f.attributes.address_1, f.attributes.city, f.attributes.zip].filter(Boolean).join(', '),
+        status: f.attributes.shelter_status || 'Unknown',
+        capacity: f.attributes.evacuation_capacity,
+        lat: f.geometry.y,
+        lon: f.geometry.x,
+        mock: false,
+      }));
+
+    // FEMA only has data during active declared disasters.
+    // Fall back to known WA emergency shelter locations so the map is always useful.
+    if (allShelters.length === 0) {
+      allShelters = FALLBACK_SHELTERS;
+      dot.className = 'status-dot ok';
+      status.textContent = 'No active FEMA shelters — showing known WA sites';
+    } else {
+      dot.className = 'status-dot ok';
+      status.textContent = `${allShelters.length} live FEMA shelters (WA state)`;
+    }
+    renderShelters();
+  } catch (err) {
+    console.error('FEMA error:', err);
+    allShelters = FALLBACK_SHELTERS;
+    dot.className = 'status-dot ok';
+    status.textContent = 'FEMA unavailable — showing known WA sites';
+    renderShelters();
+  }
+}
+
+// ── WA Geo Wildfires API ───────────────────────────────────
+// WA State Historical Wildfire Perimeters (public ArcGIS)
+const WA_FIRE_URL = 'https://services.arcgis.com/jsIt88o7TZTB5wLX/arcgis/rest/services/WA_Wildfires/FeatureServer/0/query';
+// fallback: WA DNR fire perimeters
+const WA_FIRE_FALLBACK = 'https://geo.wa.gov/datasets/dabefcb8f03549b49bee7564d4c3c4b5_2/FeatureServer/2/query';
+
+async function loadWildfires() {
+  const dot = document.getElementById('fire-dot');
+  const status = document.getElementById('fire-status');
+  let data = null;
+
+  const params = new URLSearchParams({
+    where: '1=1',
+    outFields: 'FIRE_NAME,YEAR_,COUNTY,GIS_ACRES,CAUSE,ALARM_DATE',
+    returnGeometry: 'true',
+    outSR: '4326',
+    f: 'json',
+    resultRecordCount: '200',
+    orderByFields: 'YEAR_ DESC',
+  });
+
+  try {
+    const res = await fetch(`${WA_FIRE_URL}?${params}`);
+    data = await res.json();
+    if (!data.features) throw new Error('No features');
+  } catch {
+    // Try fallback WA DNR endpoint
+    try {
+      const fbParams = new URLSearchParams({
+        where: '1=1',
+        outFields: '*',
+        returnGeometry: 'true',
+        outSR: '4326',
+        f: 'json',
+        resultRecordCount: '200',
+      });
+      const res2 = await fetch(`${WA_FIRE_FALLBACK}?${fbParams}`);
+      data = await res2.json();
+    } catch (err2) {
+      dot.className = 'status-dot err';
+      status.textContent = 'Failed to load wildfire data';
+      document.getElementById('fire-list').innerHTML =
+        '<div class="empty"><div class="icon">⚠️</div>Could not reach WA wildfire API.<br>Check your connection.</div>';
+      console.error('WA fire error:', err2);
+      return;
+    }
+  }
+
+  allFires = (data.features || [])
+    .filter(f => f.geometry)
+    .map(f => {
+      const a = f.attributes;
+      // Handle both ring polygons and point centroid
+      let lat, lon;
+      if (f.geometry.rings) {
+        // Compute rough centroid from first ring
+        const ring = f.geometry.rings[0];
+        lon = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+        lat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+      } else {
+        lat = f.geometry.y; lon = f.geometry.x;
+      }
+      return {
+        name: a.FIRE_NAME || a.FIRENAME || 'Unnamed Fire',
+        year: a.YEAR_ || a.YEAR || a.FIREYEAR,
+        county: a.COUNTY || a.COUNTYFIPS || '',
+        acres: a.GIS_ACRES || a.TOTALACRES || 0,
+        cause: a.CAUSE || '',
+        startDate: a.ALARM_DATE,
+        lat, lon,
+        rings: f.geometry.rings || null,
+      };
+    })
+    .filter(f => !isNaN(f.lat) && !isNaN(f.lon));
+
+  dot.className = 'status-dot ok';
+  status.textContent = `${allFires.length} historical fires loaded`;
+  renderFires();
+}
+
+// ── Render Shelters ────────────────────────────────────────
+function renderShelters() {
+  const list = document.getElementById('shelter-list');
+  shelterMarkers.forEach(m => map.removeLayer(m));
+  shelterMarkers = [];
+
+  const q = searchQuery.toLowerCase();
+  const filtered = allShelters.filter(s => {
+    const matchStatus = shelterFilter === 'all' || s.status === shelterFilter;
+    const matchSearch = !q || s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><div class="icon">🏕</div>No shelters match filters.</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  filtered.forEach(s => {
+    // Card
+    const card = document.createElement('div');
+    card.className = 'card';
+    const statusBadge = s.status === 'Open' ? 'open' : '';
+    const mockTag = s.mock ? '<span class="badge" style="background:rgba(255,184,48,0.2);color:#ffb830">sample</span>' : '';
+    card.innerHTML = `
+      <div class="card-title">
+        🏕 ${s.name}
+        <span class="badge open">${s.status || 'Unknown'}</span>
+        ${mockTag}
+      </div>
+      <div class="card-detail">
+        <strong>Address:</strong> ${s.address || 'N/A'}<br>
+        ${s.capacity ? `<strong>Capacity:</strong> ${s.capacity}` : ''}
+      </div>`;
+    card.addEventListener('click', () => {
+      map.flyTo([s.lat, s.lon], 14, { duration: 0.8 });
+    });
+    list.appendChild(card);
+
+    // Marker
+    const marker = L.circleMarker([s.lat, s.lon], {
+      color: '#4caf72', fillColor: '#4caf72', fillOpacity: 0.85,
+      radius: 8, weight: 2
+    }).addTo(map);
+    marker.bindPopup(`
+      <div class="popup-title">🏕 ${s.name}</div>
+      <div class="popup-row"><strong>Status:</strong> ${s.status || 'Unknown'}</div>
+      <div class="popup-row"><strong>Address:</strong> ${s.address || 'N/A'}</div>
+      ${s.capacity ? `<div class="popup-row"><strong>Capacity:</strong> ${s.capacity}</div>` : ''}
+    `);
+    shelterMarkers.push(marker);
+  });
+}
+
+// ── Render Fires ───────────────────────────────────────────
+function renderFires() {
+  const list = document.getElementById('fire-list');
+  fireMarkers.forEach(m => map.removeLayer(m));
+  fireMarkers = [];
+
+  const q = searchQuery.toLowerCase();
+  const filtered = allFires.filter(f => {
+    const matchYear = fireYearFilter === 'all' || String(f.year) === fireYearFilter;
+    const matchSearch = !q || (f.name || '').toLowerCase().includes(q) || (f.county || '').toLowerCase().includes(q);
+    return matchYear && matchSearch;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><div class="icon">🔥</div>No fires match filters.</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  filtered.forEach(f => {
+    const card = document.createElement('div');
+    card.className = 'card fire';
+    const acres = f.acres ? `${Math.round(f.acres).toLocaleString()} acres` : '';
+    card.innerHTML = `
+      <div class="card-title">
+        🔥 ${f.name || 'Unnamed'}
+        <span class="badge fire">${f.year || '—'}</span>
+      </div>
+      <div class="card-detail">
+        ${f.county ? `<strong>County:</strong> ${f.county}<br>` : ''}
+        ${acres ? `<strong>Size:</strong> ${acres}<br>` : ''}
+        ${f.cause ? `<strong>Cause:</strong> ${f.cause}` : ''}
+      </div>`;
+    card.addEventListener('click', () => {
+      map.flyTo([f.lat, f.lon], 11, { duration: 0.8 });
+    });
+    list.appendChild(card);
+
+    // Draw polygon if available, else circle marker
+    if (f.rings) {
+      const latlngs = f.rings[0].map(p => [p[1], p[0]]);
+      const poly = L.polygon(latlngs, {
+        color: '#ff6b35', fillColor: '#ff6b35', fillOpacity: 0.3, weight: 1.5
+      }).addTo(map);
+      poly.bindPopup(`
+        <div class="popup-title">🔥 ${f.name}</div>
+        <div class="popup-row"><strong>Year:</strong> ${f.year}</div>
+        <div class="popup-row"><strong>County:</strong> ${f.county || 'N/A'}</div>
+        ${acres ? `<div class="popup-row"><strong>Size:</strong> ${acres}</div>` : ''}
+      `);
+      fireMarkers.push(poly);
+    } else {
+      const m = L.circleMarker([f.lat, f.lon], {
+        color: '#ff6b35', fillColor: '#ff6b35', fillOpacity: 0.7, radius: 7, weight: 2
+      }).addTo(map);
+      m.bindPopup(`<div class="popup-title">🔥 ${f.name}</div>`);
+      fireMarkers.push(m);
+    }
+  });
+}
+
+// ── UI Events ──────────────────────────────────────────────
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+  });
+});
+
+// Shelter filters
+document.querySelectorAll('[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    shelterFilter = btn.dataset.filter;
+    renderShelters();
+  });
+});
+
+// Year filters
+document.querySelectorAll('[data-year]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-year]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    fireYearFilter = btn.dataset.year;
+    renderFires();
+  });
+});
+
+// Search
+document.getElementById('search-input').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  renderShelters();
+  renderFires();
+});
+
+// ── Boot ───────────────────────────────────────────────────
+loadShelters();
+loadWildfires();
+</script>
+</body>
+</html>
