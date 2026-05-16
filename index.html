@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Washington Map</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIINfQPBbiR9Wgq89FVsFpc5bK0hN2v9a3s="
+      crossorigin=""
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #202124;
+        overflow: hidden;
+      }
+
+      .app {
+        height: 100vh;
+        position: relative;
+        width: 100%;
+      }
+
+      #map {
+        height: 100%;
+        width: 100%;
+      }
+
+      .leaflet-container {
+        background: #dce8d6;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      .leaflet-pane,
+      .leaflet-tile,
+      .leaflet-marker-icon,
+      .leaflet-marker-shadow,
+      .leaflet-tile-container,
+      .leaflet-pane > svg,
+      .leaflet-pane > canvas,
+      .leaflet-zoom-box,
+      .leaflet-image-layer,
+      .leaflet-layer {
+        left: 0;
+        position: absolute;
+        top: 0;
+      }
+
+      .leaflet-tile {
+        border: 0;
+        height: 256px;
+        max-width: none !important;
+        user-select: none;
+        width: 256px;
+      }
+
+      .leaflet-map-pane {
+        z-index: 400;
+      }
+
+      .leaflet-tile-pane {
+        z-index: 200;
+      }
+
+      .leaflet-overlay-pane {
+        z-index: 400;
+      }
+
+      .leaflet-shadow-pane {
+        z-index: 500;
+      }
+
+      .leaflet-marker-pane {
+        z-index: 600;
+      }
+
+      .leaflet-tooltip-pane {
+        z-index: 650;
+      }
+
+      .leaflet-popup-pane {
+        z-index: 700;
+      }
+
+      .leaflet-control {
+        position: relative;
+        z-index: 800;
+      }
+
+      .leaflet-top,
+      .leaflet-bottom {
+        pointer-events: none;
+        position: absolute;
+        z-index: 1000;
+      }
+
+      .leaflet-top {
+        top: 0;
+      }
+
+      .leaflet-right {
+        right: 0;
+      }
+
+      .leaflet-bottom {
+        bottom: 0;
+      }
+
+      .leaflet-left {
+        left: 0;
+      }
+
+      .leaflet-control {
+        clear: both;
+        float: left;
+        pointer-events: auto;
+      }
+
+      .leaflet-control-zoom {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 6px 22px rgba(60, 64, 67, 0.2);
+        margin-left: 16px;
+        margin-top: 455px;
+        overflow: hidden;
+      }
+
+      .leaflet-control-zoom a {
+        color: #202124;
+        display: block;
+        font-size: 22px;
+        font-weight: 700;
+        height: 32px;
+        line-height: 32px;
+        text-align: center;
+        text-decoration: none;
+        width: 32px;
+      }
+
+      .leaflet-control-zoom a + a {
+        border-top: 1px solid #dadce0;
+      }
+
+      .leaflet-popup {
+        position: absolute;
+        text-align: center;
+      }
+
+      .leaflet-popup-content-wrapper {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 18px rgba(60, 64, 67, 0.25);
+        padding: 10px 12px;
+      }
+
+      .leaflet-popup-tip-container {
+        display: none;
+      }
+
+      .search-panel {
+        display: grid;
+        gap: 10px;
+        left: 18px;
+        max-width: calc(100vw - 36px);
+        position: absolute;
+        top: 18px;
+        width: 390px;
+        z-index: 500;
+      }
+
+      .search-box {
+        align-items: center;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 6px 22px rgba(60, 64, 67, 0.32);
+        display: grid;
+        gap: 10px;
+        grid-template-columns: auto 1fr auto auto;
+        min-height: 56px;
+        padding: 8px 8px 8px 16px;
+      }
+
+      .search-icon {
+        color: #1a73e8;
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      input {
+        border: 0;
+        font: inherit;
+        font-size: 16px;
+        outline: 0;
+        width: 100%;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .search-box button {
+        background: #1a73e8;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 10px 13px;
+      }
+
+      .search-box .reset-button {
+        background: #f1f3f4;
+        color: #202124;
+      }
+
+      .results {
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 8px;
+        box-shadow: 0 6px 22px rgba(60, 64, 67, 0.2);
+        display: grid;
+        max-height: 260px;
+        overflow: auto;
+        padding: 6px;
+      }
+
+      .result {
+        background: transparent;
+        border-radius: 7px;
+        display: grid;
+        gap: 3px;
+        padding: 11px 12px;
+        text-align: left;
+      }
+
+      .result:hover,
+      .result.active {
+        background: #e8f0fe;
+      }
+
+      .result strong {
+        font-size: 15px;
+      }
+
+      .result span {
+        color: #5f6368;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="search-panel" aria-label="Search Washington map">
+        <form class="search-box" id="search-form">
+          <span class="search-icon" aria-hidden="true">S</span>
+          <input
+            id="search-input"
+            aria-label="Search Washington places"
+            placeholder="Search Washington"
+            autocomplete="off"
+          />
+          <button type="submit">Search</button>
+          <button class="reset-button" id="reset-map" type="button">Reset</button>
+        </form>
+        <div class="results" id="results" aria-label="Washington place suggestions"></div>
+      </section>
+      <div id="map"></div>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script>
+      const places = [
+        { name: "Seattle", coords: [47.6062, -122.3321], note: "Puget Sound tech hub" },
+        { name: "Bellevue", coords: [47.6101, -122.2015], note: "Eastside city center" },
+        { name: "Tacoma", coords: [47.2529, -122.4443], note: "South Sound waterfront" },
+        { name: "Olympia", coords: [47.0379, -122.9007], note: "Washington state capital" },
+        { name: "Spokane", coords: [47.6588, -117.426], note: "Eastern Washington metro" },
+        { name: "Bellingham", coords: [48.7519, -122.4787], note: "Northwest college town" },
+        { name: "Vancouver", coords: [45.628, -122.6739], note: "Columbia River city" },
+        { name: "Yakima", coords: [46.6021, -120.5059], note: "Central Washington valley" },
+      ];
+
+      const washingtonBounds = [
+        [45.45, -124.95],
+        [49.05, -116.85],
+      ];
+
+      const washingtonOutline = [
+        [49.0, -123.32],
+        [48.78, -123.02],
+        [48.52, -123.25],
+        [48.38, -124.72],
+        [47.9, -124.73],
+        [47.25, -124.55],
+        [46.28, -124.05],
+        [46.18, -123.2],
+        [45.54, -122.78],
+        [45.54, -117.48],
+        [45.94, -117.03],
+        [49.0, -117.03],
+        [49.0, -123.32],
+      ];
+
+      const map = L.map("map", {
+        maxBounds: [
+          [44.9, -125.2],
+          [49.2, -116.6],
+        ],
+        minZoom: 6,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(map);
+
+      L.polygon(washingtonOutline, {
+        color: "#1a73e8",
+        fillColor: "#1a73e8",
+        fillOpacity: 0.08,
+        opacity: 0.9,
+        weight: 4,
+      }).addTo(map);
+
+      map.fitBounds(washingtonBounds, { padding: [34, 34] });
+
+      const input = document.querySelector("#search-input");
+      const form = document.querySelector("#search-form");
+      const results = document.querySelector("#results");
+      const resetMapButton = document.querySelector("#reset-map");
+      let selectedPlace = places[0];
+      const markers = new Map();
+
+      function selectPlace(place) {
+        selectedPlace = place;
+        input.value = place.name;
+        map.flyTo(place.coords, 11, { duration: 0.8 });
+        markers.get(place.name).openPopup();
+        renderResults();
+      }
+
+      places.forEach((place) => {
+        const marker = L.circleMarker(place.coords, {
+          color: "#263238",
+          fillColor: "#fff",
+          fillOpacity: 0.95,
+          radius: 8,
+          weight: 3,
+        })
+          .addTo(map)
+          .bindPopup(`<strong>${place.name}</strong><br>${place.note}`)
+          .on("click", () => selectPlace(place));
+
+        markers.set(place.name, marker);
+      });
+
+      function filteredPlaces() {
+        const query = input.value.trim().toLowerCase();
+        if (!query) return places;
+        return places.filter((place) => place.name.toLowerCase().includes(query));
+      }
+
+      function renderResults() {
+        results.innerHTML = "";
+        filteredPlaces().forEach((place) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `result${selectedPlace.name === place.name ? " active" : ""}`;
+          button.innerHTML = `<strong>${place.name}</strong><span>${place.note}</span>`;
+          button.addEventListener("click", () => selectPlace(place));
+          results.appendChild(button);
+        });
+      }
+
+      input.addEventListener("input", renderResults);
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const firstResult = filteredPlaces()[0];
+        if (firstResult) selectPlace(firstResult);
+      });
+
+      resetMapButton.addEventListener("click", () => {
+        input.value = "";
+        map.fitBounds(washingtonBounds, { padding: [34, 34] });
+        renderResults();
+      });
+
+      window.addEventListener("resize", () => {
+        map.invalidateSize();
+        map.fitBounds(washingtonBounds, { padding: [34, 34] });
+      });
+
+      setTimeout(() => {
+        map.invalidateSize();
+        map.fitBounds(washingtonBounds, { padding: [34, 34] });
+      }, 100);
+
+      renderResults();
+    </script>
+  </body>
+</html>
