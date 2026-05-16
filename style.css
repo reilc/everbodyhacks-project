@@ -266,20 +266,23 @@ body {
     gap: 12px; /* Smooth spacing between your icon and titles */
   }
   
-  /* 2. Lock down the square container dimensions */
+  /* 2. Style the container for the logo, defining the border */
   .logo-icon {
-    width: 40px;         /* Match the size your 'F' layout used */
-    height: 40px;        /* Forces a perfect square aspect ratio */
+    width: 40px;          /* Match the size your 'F' layout used */
+    height: 40px;         /* Forces a perfect square aspect ratio */
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;    /* Keeps any stray pixels from spilling out */
-    flex-shrink: 0;      /* Prevents the sidebar text from crushing the box */
+    border: 1px solid #ccc; /* Apply a border to the CONTAINER */
+    border-radius: 4px;   /* Smooth the container's corners */
+    overflow: hidden;     /* Critical: clips the image to the container's edges */
+    flex-shrink: 0;       /* Prevents the sidebar text from crushing the box */
+    background: transparent; /* Makes sure the background inside is clear */
   }
   
-  /* 3. Force the image to obey the box limits */
+  /* 3. Style the image to be full-width, full-height, and ignore padding */
   .logo-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Shrinks the image beautifully without warping its shape */
+    width: 100%;          /* Forces the image to fill the entire container */
+    height: 100%;         /* Forces the image to fill the entire container */
+    object-fit: cover;    /* Crops the image to fully cover the area without distortion */
   }
