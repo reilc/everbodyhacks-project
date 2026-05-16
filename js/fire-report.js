@@ -388,10 +388,10 @@
   }
 
   /* ── Boot ────────────────────────────────────────────────────────────── */
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFireReportControl);
-  } else {
-    initFireReportControl();
-  }
+  if (window.map) {
+  initFireReportControl();
+} else {
+  window.addEventListener('mapReady', initFireReportControl);
+}
 
 })();

@@ -32,3 +32,6 @@ L.polygon(WA_OUTLINE, {
   fillOpacity: 0.05,
   weight: 2,
 }).addTo(map);
+
+// Notify fire-report.js that the map is ready
+window.dispatchEvent(new Event('mapReady'));
