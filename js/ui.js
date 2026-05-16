@@ -7,8 +7,21 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+
+    if (tab.dataset.tab === 'smoke') {
+      if (typeof smokeLayersGroup !== 'undefined') map.addLayer(smokeLayersGroup);
+      if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.removeLayer(m));
+    } else if (tab.dataset.tab === 'fires') {
+      if (typeof smokeLayersGroup !== 'undefined') map.removeLayer(smokeLayersGroup);
+      if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.addLayer(m));
+    } else {
+      // Shelters tab view configuration
+      if (typeof smokeLayersGroup !== 'undefined') map.removeLayer(smokeLayersGroup);
+      if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.addLayer(m));
+    }
   });
 });
+
 
 const searchInput = document.getElementById('search-input');
 
@@ -20,6 +33,7 @@ searchInput.addEventListener('input', e => {
 
   if (!stillSelectedCity) {
     selectedCity = null;
+    selectedFire = null;
     allShelters = [];
     shelterMarkers.forEach(marker => map.removeLayer(marker));
     shelterMarkers = [];
@@ -31,6 +45,7 @@ searchInput.addEventListener('input', e => {
   }
 
   renderShelters();
+  renderFires();
 });
 
 searchInput.addEventListener('keydown', e => {

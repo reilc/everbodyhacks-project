@@ -1,5 +1,5 @@
 // shelters.js
-// City-first search against confirmed 2024 Washington wildfire shelter/resource records.
+// City-first search against confirmed 2024 Washington food, shelter, and wildfire resource records.
 
 function distanceMiles(from, to) {
   const toRad = degrees => degrees * Math.PI / 180;
@@ -17,17 +17,24 @@ function distanceMiles(from, to) {
 }
 
 function setShelterStatus(kind, message) {
-  const dot = document.getElementById('shelter-dot');
-  const status = document.getElementById('shelter-status');
+  const dot = document.getElementById('resource-dot');
+  const status = document.getElementById('resource-status');
 
   dot.className = `status-dot ${kind}`;
   status.textContent = message;
 }
 
+function clearShelterMarkers() {
+  shelterMarkers.forEach(marker => map.removeLayer(marker));
+  shelterMarkers = [];
+}
+
 function selectCity(city) {
   selectedCity = city;
+  selectedFire = null;
   searchQuery = city.name;
   document.getElementById('search-input').value = city.name;
+  clearShelterMarkers();
 
   if (selectedCityMarker) {
     map.removeLayer(selectedCityMarker);
@@ -48,31 +55,125 @@ function selectCity(city) {
   `);
 
   map.flyTo([city.lat, city.lon], 9, { duration: 0.6 });
-  loadSheltersForCity(city);
+  loadResourcesForCity(city);
+  renderFires();
 }
 
-function loadSheltersForCity(city) {
-  allShelters = HISTORICAL_2024_SHELTERS
+function loadResourcesForCity(city) {
+  const wildfireResources = HISTORICAL_2024_SHELTERS
+    .filter(shelter => wasActiveOnSimulationDate(shelter))
+    .filter(hasFullAddress)
     .map(shelter => ({
       ...shelter,
+      dataset: 'Verified wildfire response',
       distance: distanceMiles(city, shelter),
-    }))
-    .filter(shelter => shelter.distance <= SHELTER_SEARCH_RADIUS_MILES)
-    .sort((a, b) => a.distance - b.distance);
+    }));
 
-  setShelterStatus('ok', `${allShelters.length} confirmed 2024 wildfire shelters/resources near ${city.name}`);
+  const communityResources = COMMUNITY_RESOURCE_SITES
+    .filter(hasFullAddress)
+    .map(resource => ({
+      ...resource,
+      fire: 'Food / basic needs resource',
+      opened: 'Included for the July 4, 2024 simulation from documented 2024 food/resource service activity. Confirm real-time hours, shelter beds, and eligibility with the provider or WA 211 before traveling.',
+      activeStart: resource.activeStart || '2024-07-01',
+      activeEnd: resource.activeEnd || '2024-09-30',
+      dataset: 'Confirmed July 2024 food/resource provider',
+      distance: distanceMiles(city, resource),
+    }));
+
+  const nearby = [...wildfireResources, ...communityResources]
+    .filter(resource => resource.distance <= SHELTER_SEARCH_RADIUS_MILES)
+    .sort((a, b) => scoreResource(a) - scoreResource(b));
+
+  allShelters = nearby.length >= 5
+    ? nearby.slice(0, 12)
+    : [...nearby, ...communityResources
+        .filter(resource => !nearby.some(existing => existing.name === resource.name))
+        .sort((a, b) => a.distance - b.distance)]
+        .slice(0, 12);
+
+  setShelterStatus('ok', `Showing ${allShelters.length} nearest July 4 resources for ${city.name}`);
   renderShelters();
 }
 
-function renderShelters() {
-  const list = document.getElementById('shelter-list');
+function loadResourcesForFire(fire) {
+  selectedFire = fire;
+  selectedCity = null;
+  searchQuery = fire.name || '';
+  document.getElementById('search-input').value = fire.name || '';
+  clearShelterMarkers();
 
-  shelterMarkers.forEach(marker => map.removeLayer(marker));
-  shelterMarkers = [];
+  if (selectedCityMarker) {
+    map.removeLayer(selectedCityMarker);
+    selectedCityMarker = null;
+  }
+
+  const wildfireResources = HISTORICAL_2024_SHELTERS
+    .filter(resource => wasActiveOnSimulationDate(resource))
+    .filter(hasFullAddress)
+    .map(resource => ({
+      ...resource,
+      dataset: 'Verified wildfire response',
+      distance: distanceMiles(fire, resource),
+    }));
+
+  const communityResources = COMMUNITY_RESOURCE_SITES
+    .filter(hasFullAddress)
+    .map(resource => ({
+      ...resource,
+      fire: fire.name,
+      opened: 'Included for the July 4, 2024 simulation from documented 2024 food/resource service activity near this fire area. Confirm real-time hours, shelter beds, and eligibility with the provider or WA 211 before traveling.',
+      activeStart: resource.activeStart || '2024-07-01',
+      activeEnd: resource.activeEnd || '2024-09-30',
+      dataset: 'Confirmed July 2024 food/resource provider',
+      distance: distanceMiles(fire, resource),
+    }));
+
+  const nearby = [...wildfireResources, ...communityResources]
+    .filter(resource => resource.distance <= INCIDENT_RESOURCE_RADIUS_MILES)
+    .sort((a, b) => scoreResource(a) - scoreResource(b));
+
+  allShelters = nearby.length >= 5
+    ? nearby.slice(0, 10)
+    : [...nearby, ...communityResources
+        .filter(resource => !nearby.some(existing => existing.name === resource.name))
+        .sort((a, b) => a.distance - b.distance)]
+        .slice(0, 10);
+
+  setShelterStatus('ok', `Showing ${allShelters.length} nearest July 4 resources for ${fire.name || 'selected fire'}`);
+  renderShelters();
+}
+
+function scoreResource(resource) {
+  const datasetBoost = resource.dataset === 'Verified wildfire response' ? -1000 : 0;
+  return datasetBoost + resource.distance;
+}
+
+function wasActiveOnSimulationDate(shelter) {
+  return SIMULATION_FIRE_DATE >= shelter.activeStart && SIMULATION_FIRE_DATE <= shelter.activeEnd;
+}
+
+function hasFullAddress(resource) {
+  return /^\d+\s+/.test(resource.address || '');
+}
+
+function renderShelters() {
+  const list = document.getElementById('resource-list');
+
+  clearShelterMarkers();
+
+  if (selectedFire) {
+    renderResourceCards(list);
+    return;
+  }
 
   if (!searchQuery) {
-    setShelterStatus('ok', `${HISTORICAL_2024_SHELTERS.length} confirmed 2024 wildfire shelters/resources loaded`);
-    list.innerHTML = '<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed 2024 wildfire shelters and support resources.</div>';
+    const activeCount = [
+      ...HISTORICAL_2024_SHELTERS,
+      ...COMMUNITY_RESOURCE_SITES,
+    ].filter(wasActiveOnSimulationDate).filter(hasFullAddress).length;
+    setShelterStatus('ok', `${activeCount} resources included for the ${SIMULATION_FIRE_DATE_LABEL} simulation`);
+    list.innerHTML = `<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed food banks, resource centers, and documented wildfire shelters for the ${SIMULATION_FIRE_DATE_LABEL} simulation.</div>`;
     return;
   }
 
@@ -85,11 +186,31 @@ function renderShelters() {
   }
 
   if (!allShelters.length) {
-    list.innerHTML = `<div class="empty"><div class="icon">Shelters</div>No confirmed 2024 wildfire shelter/resource records found within ${SHELTER_SEARCH_RADIUS_MILES} miles of ${selectedCity.name}.</div>`;
+    list.innerHTML = `<div class="empty"><div class="icon">Resources</div>No confirmed food/shelter resources for the ${SIMULATION_FIRE_DATE_LABEL} simulation found within ${SHELTER_SEARCH_RADIUS_MILES} miles of ${selectedCity.name}.</div>`;
     return;
   }
 
-  list.innerHTML = '';
+  renderResourceCards(list);
+}
+
+function renderResourceCards(list) {
+  if (!allShelters.length) {
+    list.innerHTML = '<div class="empty"><div class="icon">Resources</div>No nearby resources found.</div>';
+    return;
+  }
+
+    list.innerHTML = selectedFire
+    ? `<div class="empty" style="padding:14px 12px;text-align:left">
+        Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedFire.name || 'selected fire'}<br>
+        Documented wildfire shelters appear first when active on July 4. Food banks and resource centers use 2024 service evidence; verify real-time availability with WA 211.
+      </div>`
+    : selectedCity
+      ? `<div class="empty" style="padding:14px 12px;text-align:left">
+          Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedCity.name}<br>
+          These are confirmed 2024 providers, not a promise of open beds. Call ahead or use WA 211 for real-time availability.
+        </div>`
+    : '';
+
   allShelters.forEach(shelter => {
     const card = document.createElement('div');
     card.className = 'card';
@@ -99,11 +220,8 @@ function renderShelters() {
         <span class="badge open">${shelter.type}</span>
       </div>
       <div class="card-detail">
-        <strong>Fire:</strong> ${shelter.fire}<br>
         <strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi<br>
-        <strong>2024 status:</strong> ${shelter.opened}<br>
-        <strong>Address:</strong> ${shelter.address}<br>
-        <strong>Source:</strong> <a href="${shelter.sourceUrl}" target="_blank" rel="noopener noreferrer">${shelter.sourceName}</a>
+        <strong>Address:</strong> ${shelter.address}
       </div>`;
 
     card.addEventListener('click', () => map.flyTo([shelter.lat, shelter.lon], 13, { duration: 0.8 }));
@@ -119,8 +237,6 @@ function renderShelters() {
 
     marker.bindPopup(`
       <div class="popup-title">${shelter.name}</div>
-      <div class="popup-row"><strong>Fire:</strong> ${shelter.fire}</div>
-      <div class="popup-row"><strong>Type:</strong> ${shelter.type}</div>
       <div class="popup-row"><strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi</div>
       <div class="popup-row"><strong>Address:</strong> ${shelter.address}</div>
     `);

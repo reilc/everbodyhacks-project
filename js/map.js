@@ -7,10 +7,9 @@ const map = window.map = L.map('map', { zoomControl: false });
 // Put zoom controls in bottom-right so they don't clash with the sidebar
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// Dark CartoDB tile layer
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap &copy; CARTO',
-  subdomains: 'abcd',
+// Light map tiles improve text contrast and show waterways in blue.
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
   maxZoom: 19,
 }).addTo(map);
 

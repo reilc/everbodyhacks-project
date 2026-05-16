@@ -18,7 +18,7 @@
         <div class="logo-icon">F</div>
         <div>
           <h1>Wildfire Community<br>Response Hub</h1>
-          <p>Washington State - 2024 Data</p>
+          <p>Washington State - July 4, 2024</p>
         </div>
       </div>
       <div class="search-wrap">
@@ -28,28 +28,38 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-tab="shelters">Shelters</button>
+      <button class="tab active" data-tab="resources">Resources</button>
       <button class="tab" data-tab="fires">Wildfires</button>
+      <button class="tab" data-tab="smoke">Smoke</button>
     </div>
 
-    <div class="panel active" id="panel-shelters">
+    <div class="panel active" id="panel-resources">
       <div class="status-bar">
-        <div class="status-dot ok" id="shelter-dot"></div>
-        <span id="shelter-status">Type a Washington city to find confirmed 2024 wildfire shelters/resources</span>
+        <div class="status-dot ok" id="resource-dot"></div>
+        <span id="resource-status">Type a Washington city to find July 4, 2024 food/shelter resources</span>
       </div>
-      <div class="card-list" id="shelter-list">
-        <div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed 2024 wildfire shelters and support resources.</div>
+      <div class="card-list" id="resource-list">
+        <div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed food banks, resource centers, and documented wildfire shelters for the July 4, 2024 simulation.</div>
       </div>
     </div>
 
     <div class="panel" id="panel-fires">
       <div class="status-bar">
         <div class="status-dot loading" id="fire-dot"></div>
-        <span id="fire-status">Loading WA DNR 2024 wildfire records...</span>
+        <span id="fire-status">Loading July 4, 2024 fire simulation...</span>
       </div>
       <div class="card-list" id="fire-list">
         <div class="empty"><div class="icon">Fire</div>Fetching wildfire data...</div>
       </div>
+    </div>
+
+    <div class="panel" id="panel-smoke">
+      <div class="status-bar">
+        <div class="status-dot ok" id="smoke-dot"></div>
+        <span>Simulated smoke risk from July 4, 2024 fire records</span>
+      </div>
+      <div class="card-list" id="smoke-list">
+        </div>
     </div>
   </aside>
 
@@ -62,8 +72,8 @@
 <script src="js/map.js"></script>
 <script src="js/shelters.js"></script>
 <script src="js/wildfires.js"></script>
+<script src="js/smoke.js"></script> 
 <script src="js/ui.js"></script>
-<!-- Fire incident report control (top-right panel) -->
 <script src="js/fire-report.js"></script>
 </body>
 </html>

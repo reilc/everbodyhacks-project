@@ -8,7 +8,7 @@ async function loadWildfires() {
   const status = document.getElementById('fire-status');
 
   dot.className = 'status-dot loading';
-  status.textContent = 'Loading WA DNR 2024 wildfire records...';
+  status.textContent = `Loading ${SIMULATION_FIRE_DATE_LABEL} fire simulation...`;
 
   try {
     const [stats, perimeters] = await Promise.all([
@@ -19,7 +19,7 @@ async function loadWildfires() {
     allFires = { stats, perimeters };
 
     dot.className = 'status-dot ok';
-    status.textContent = `${stats.length.toLocaleString()} WA DNR 2024 fire records + ${perimeters.length} mapped perimeters`;
+    status.textContent = `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
   } catch (err) {
     console.error('2024 wildfire data error:', err);
     dot.className = 'status-dot err';
@@ -32,7 +32,7 @@ async function loadWildfires() {
 
 async function loadDnrFireStats() {
   const params = new URLSearchParams({
-    where: "DSCVR_DT >= DATE '2024-01-01' AND DSCVR_DT < DATE '2025-01-01'",
+    where: `DSCVR_DT >= DATE '${SIMULATION_FIRE_DATE}' AND DSCVR_DT < DATE '2024-07-05'`,
     outFields: 'OBJECTID,INCIDENT_NM,COUNTY_LABEL_NM,FIREGCAUSE_LABEL_NM,ACRES_BURNED,DSCVR_DT,FIREEVNT_CLASS_LABEL_NM,LAT_COORD,LON_COORD,START_OWNER_AGENCY_NM,START_JURISDICTION_AGENCY_NM,PROTECTION_TYPE,REGION_NAME',
     returnGeometry: 'true',
     outSR: '4326',
@@ -158,8 +158,14 @@ function renderFires() {
   fireMarkers.forEach(marker => map.removeLayer(marker));
   fireMarkers = [];
 
-  const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
-  const perimeters = Array.isArray(allFires.perimeters) ? allFires.perimeters : [];
+  const allStats = Array.isArray(allFires.stats) ? allFires.stats : [];
+  const allPerimeters = Array.isArray(allFires.perimeters) ? allFires.perimeters : [];
+  const stats = selectedCity
+    ? allStats.filter(fire => distanceMiles(selectedCity, fire) <= CITY_FIRE_RADIUS_MILES)
+    : allStats;
+  const perimeters = selectedCity
+    ? allPerimeters.filter(fire => distanceMiles(selectedCity, fire) <= CITY_FIRE_RADIUS_MILES)
+    : allPerimeters;
 
   // Always clear and render community reports section first
   list.innerHTML = '';
@@ -176,6 +182,20 @@ function renderFires() {
   renderPerimeters(perimeters);
   renderFirePoints(stats);
   renderFireCards(list, stats, perimeters);
+  updateFireStatus(stats, perimeters);
+
+  if (typeof renderSmoke === 'function') {
+    renderSmoke();
+  }
+}
+
+function updateFireStatus(stats, perimeters) {
+  const status = document.getElementById('fire-status');
+  if (!status) return;
+
+  status.textContent = selectedCity
+    ? `${stats.length} ${SIMULATION_FIRE_DATE_LABEL} fire records within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}`
+    : `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
 }
 
 // ── Community Reports section ──────────────────────────────────────────
@@ -311,12 +331,25 @@ function renderPerimeters(perimeters) {
 
 function renderFirePoints(stats) {
   stats.forEach(fire => {
+    const isSelected = isSelectedFire(fire);
+    const fireColor = isSelected ? '#ff9d2e' : '#ff3333';
+    const haloOpacity = isSelected ? 0.30 : 0.18;
+    const markerWeight = isSelected ? 4 : 2;
+
+    const heatHalo = L.circle([fire.lat, fire.lon], {
+      radius: getFireHaloRadius(fire.acres),
+      color: fireColor,
+      fillColor: fireColor,
+      fillOpacity: haloOpacity,
+      weight: isSelected ? 3 : 1.5,
+    }).addTo(map);
+
     const marker = L.circleMarker([fire.lat, fire.lon], {
-      color: '#ff9d42',
-      fillColor: '#ff9d42',
-      fillOpacity: 0.65,
-      radius: getFireRadius(fire.acres),
-      weight: 1,
+      color: fireColor,
+      fillColor: fireColor,
+      fillOpacity: isSelected ? 0.96 : 0.82,
+      radius: getFireRadius(fire.acres) + (isSelected ? 3 : 0),
+      weight: markerWeight,
     }).addTo(map);
 
     marker.bindPopup(`
@@ -347,8 +380,9 @@ function renderFireCards(list, stats, perimeters) {
   list.appendChild(summary);
 
   largestStats.forEach(fire => {
+    const isSelected = isSelectedFire(fire);
     const card = document.createElement('div');
-    card.className = 'card fire';
+    card.className = `card fire${isSelected ? ' selected-fire' : ''}`;
     card.innerHTML = `
       <div class="card-title">
         ${fire.name}
@@ -363,6 +397,15 @@ function renderFireCards(list, stats, perimeters) {
     card.addEventListener('click', () => map.flyTo([fire.lat, fire.lon], 11, { duration: 0.8 }));
     list.appendChild(card);
   });
+}
+
+function isSelectedFire(fire) {
+  if (!selectedFire || !fire) return false;
+  if (selectedFire.id && fire.id) return selectedFire.id === fire.id;
+
+  return selectedFire.name === fire.name &&
+    selectedFire.lat === fire.lat &&
+    selectedFire.lon === fire.lon;
 }
 
 function formatAcres(acres) {

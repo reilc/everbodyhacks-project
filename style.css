@@ -1,17 +1,17 @@
 /* ── CSS Variables (colours, fonts) ── */
 :root {
-  --bg: #0f1a12;
-  --surface: #162019;
-  --surface2: #1e2e22;
-  --border: #2a3d2e;
-  --accent: #ff6b35;
-  --accent2: #4caf72;
-  --danger: #ff4444;
-  --warning: #ffb830;
-  --text: #e8f0ea;
-  --text-muted: #7a9980;
-  --shelter: #4caf72;
-  --fire: #ff6b35;
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface2: #f1f6f4;
+  --border: #c9d8d0;
+  --accent: #e8502a;
+  --accent2: #267a4f;
+  --danger: #c62828;
+  --warning: #b56b00;
+  --text: #102018;
+  --text-muted: #49645a;
+  --shelter: #267a4f;
+  --fire: #e8502a;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,6 +32,7 @@ body {
   min-width: 360px;
   background: var(--surface);
   border-right: 1px solid var(--border);
+  box-shadow: 2px 0 14px rgba(33, 56, 76, 0.08);
   display: flex;
   flex-direction: column;
   z-index: 1000;
@@ -55,6 +56,7 @@ body {
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px;
+  color: #fff;
 }
 
 .logo h1 { font-size: 15px; font-weight: 700; line-height: 1.2; }
@@ -136,6 +138,10 @@ body {
 }
 .card:hover      { border-color: var(--accent2); transform: translateX(2px); }
 .card.fire:hover { border-color: var(--fire); }
+.card.fire.selected-fire {
+  border-color: #ff9d2e;
+  box-shadow: 0 0 0 1px rgba(255,157,46,0.35);
+}
 
 .card-title {
   font-size: 13px; font-weight: 700; margin-bottom: 4px;
@@ -147,8 +153,8 @@ body {
   border-radius: 20px; font-family: 'DM Mono', monospace;
 }
 
-.badge.open { background: rgba(76,175,114,0.2); color: var(--accent2); }
-.badge.fire { background: rgba(255,107,53,0.2); color: var(--fire); }
+.badge.open { background: rgba(38,122,79,0.14); color: var(--accent2); }
+.badge.fire { background: rgba(232,80,42,0.14); color: var(--fire); }
 
 .card-detail { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 .card-detail strong { color: var(--text); font-weight: 500; }
@@ -175,11 +181,11 @@ body {
 
 /* ── Map ── */
 #map { flex: 1; }
-.leaflet-container { background: #1a2a1e; }
+.leaflet-container { background: #a6d5f7; }
 
 .leaflet-popup-content-wrapper {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(33, 56, 76, 0.2);
   color: var(--text);
 }
 .leaflet-popup-tip { background: var(--surface); }
