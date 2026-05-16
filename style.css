@@ -193,3 +193,41 @@ body {
 .popup-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
 .popup-row   { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 .popup-row strong { color: var(--text); }
+
+/* ── Fire tab section headers (append to bottom of style.css) ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 6px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.section-label.reported   { color: #E24B4A; }
+.section-label.historical { color: var(--text-muted); }
+
+.section-count {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 8px;
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 20px 4px;
+}
+
+.reports-empty { padding: 20px; font-size: 12px; }
+
+.report-card { border-left-width: 3px !important; }

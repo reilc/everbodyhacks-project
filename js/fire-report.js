@@ -2,7 +2,10 @@
  * Adds a collapsible local fire-note panel to the top-right of the Leaflet map.
  * Depends on: Leaflet (L) being available globally, and the map instance
  * being stored as window.map (set window.map = L.map(...) in map.js).
- * Notes are saved to localStorage under the key "fireReports".
+ * Reports are saved to localStorage under the key "fireReports".
+ *
+ * Location is picked by clicking on an embedded mini-map (centered on the
+ * user's GPS location if available, otherwise defaults to Washington state).
  */
 
 (function () {
@@ -34,7 +37,7 @@
       background: #fff;
       border-radius: 10px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.18);
-      width: 310px;
+      width: 320px;
       font-family: 'DM Sans', sans-serif;
       overflow: hidden;
       display: none;
@@ -49,7 +52,13 @@
       align-items: center;
       justify-content: space-between;
     }
-    .fr-panel-head-left { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; }
+    .fr-panel-head-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
     .fr-close {
       background: none;
       border: none;
@@ -63,8 +72,67 @@
 
     .fr-body { padding: 14px; }
 
+    /* ── Mini-map picker ── */
+    .fr-map-wrap {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #e8e7e0;
+      margin-bottom: 10px;
+      transition: border-color 0.15s;
+    }
+    .fr-map-wrap.selected { border-color: #A32D2D; }
+
+    #fr-minimap {
+      width: 100%;
+      height: 180px;
+      display: block;
+    }
+
+    .fr-map-hint {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 11px;
+      text-align: center;
+      padding: 5px 8px;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .fr-map-hint.hidden { opacity: 0; }
+
+    .fr-coords {
+      font-size: 11px;
+      color: #9b9a96;
+      text-align: center;
+      margin-bottom: 10px;
+      min-height: 16px;
+    }
+    .fr-coords.set { color: #A32D2D; font-weight: 600; }
+
+    /* ── Locate me button ── */
+    .fr-locate-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      background: #f9f8f5;
+      border: 1px solid rgba(0,0,0,0.18);
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      color: #6b6a65;
+      margin-bottom: 10px;
+      transition: background 0.15s;
+    }
+    .fr-locate-btn:hover { background: #f0efe8; }
+
+    /* ── Fields ── */
     .fr-field { margin-bottom: 10px; }
-    .fr-field:last-child { margin-bottom: 0; }
     .fr-label {
       display: block;
       font-size: 12px;
@@ -89,8 +157,6 @@
     }
     .fr-input:focus { border-color: #E24B4A; box-shadow: 0 0 0 2px rgba(226,75,74,0.12); }
 
-    .fr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
     .fr-sev { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 2px; }
     .fr-sev-btn {
       border: 1px solid rgba(0,0,0,0.15);
@@ -109,22 +175,6 @@
     .fr-sev-btn.active-medium { border-color:#BA7517; background:#FAEEDA; color:#854F0B; }
     .fr-sev-btn.active-high   { border-color:#A32D2D; background:#FCEBEB; color:#791F1F; }
 
-    .fr-geo-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      background: #f9f8f5;
-      border: 1px solid rgba(0,0,0,0.18);
-      border-radius: 6px;
-      padding: 5px 10px;
-      cursor: pointer;
-      color: #6b6a65;
-      margin-top: 6px;
-    }
-    .fr-geo-btn:hover { background: #f0efe8; }
-
     .fr-submit {
       width: 100%;
       padding: 10px;
@@ -139,7 +189,8 @@
       margin-top: 12px;
       transition: background 0.15s;
     }
-    .fr-submit:hover { background: #791F1F; }
+    .fr-submit:hover  { background: #791F1F; }
+    .fr-submit:disabled { background: #ccc; cursor: not-allowed; }
 
     .fr-toast {
       display: none;
@@ -185,25 +236,26 @@
       </div>
 
       <div class="fr-body">
-        <div class="fr-field">
-          <label class="fr-label">Address / landmark <span class="req">*</span></label>
-          <input class="fr-input" id="fr-address" placeholder="e.g. 123 Main St, Wenatchee, WA" autocomplete="off" />
-        </div>
 
+        <!-- Step 1: location picker mini-map -->
         <div class="fr-field">
-          <label class="fr-label">Coordinates <span class="req">*</span></label>
-          <div class="fr-grid">
-            <input class="fr-input" id="fr-lat" type="number" placeholder="Latitude" step="any" />
-            <input class="fr-input" id="fr-lng" type="number" placeholder="Longitude" step="any" />
+          <label class="fr-label">Fire location <span class="req">*</span></label>
+          <div class="fr-map-wrap" id="fr-map-wrap">
+            <div id="fr-minimap"></div>
+            <div class="fr-map-hint" id="fr-map-hint">Tap the map to pin the fire location</div>
           </div>
-          <button class="fr-geo-btn" id="fr-geo-btn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-            </svg>
-            Use my location
-          </button>
+          <div class="fr-coords" id="fr-coords">No location selected</div>
         </div>
 
+        <!-- Center on my location -->
+        <button class="fr-locate-btn" id="fr-locate-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+          </svg>
+          Center map on my location
+        </button>
+
+        <!-- Severity -->
         <div class="fr-field">
           <label class="fr-label">Severity <span class="req">*</span></label>
           <div class="fr-sev">
@@ -213,6 +265,7 @@
           </div>
         </div>
 
+        <!-- Fire type -->
         <div class="fr-field">
           <label class="fr-label">Fire type</label>
           <select class="fr-input" id="fr-type">
@@ -226,12 +279,13 @@
           </select>
         </div>
 
+        <!-- Notes -->
         <div class="fr-field">
           <label class="fr-label">Notes</label>
           <textarea class="fr-input" id="fr-notes" rows="2" placeholder="Size, spread, nearby hazards…" style="resize:vertical;"></textarea>
         </div>
 
-        <button class="fr-submit" id="fr-submit">Save Local Note</button>
+        <button class="fr-submit" id="fr-submit" disabled>Pin a location to submit</button>
         <div class="fr-toast" id="fr-toast"></div>
         <div class="fr-count">Local notes stay in this browser. Call 911 for emergencies.</div>
         <div class="fr-count" id="fr-count"></div>
@@ -239,147 +293,288 @@
     </div>
   `;
 
+  /* ── State ───────────────────────────────────────────────────────────── */
+  let miniMap = null;
+  let pinMarker = null;
+  let userDot = null;       // Blue dot showing the user's real GPS location
+  let userLat = null;       // Stored so reports can be sorted by proximity
+  let userLng = null;
+  let pickedLat = null;
+  let pickedLng = null;
+  let severity = 'high';
+
+  // Expose user location globally so wildfires.js can sort by proximity
+  window.frUserLocation = () => userLat !== null ? { lat: userLat, lng: userLng } : null;
+
   /* ── Leaflet Control ─────────────────────────────────────────────────── */
   function initFireReportControl() {
     if (typeof L === 'undefined') {
-      console.warn('fire-report.js: Leaflet not loaded yet, retrying…');
       setTimeout(initFireReportControl, 300);
       return;
     }
-
-    // Wait for window.map to be set by map.js
     if (!window.map) {
       setTimeout(initFireReportControl, 300);
       return;
     }
 
-    // Inject styles
     const style = document.createElement('style');
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    // Create custom Leaflet control
     const FireReportControl = L.Control.extend({
       options: { position: 'topright' },
-      onAdd: function () {
+      onAdd() {
         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
         container.style.cssText = 'background:none;border:none;box-shadow:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px;';
         container.innerHTML = PANEL_HTML;
-
-        // Prevent map interactions from firing through the control
         L.DomEvent.disableClickPropagation(container);
         L.DomEvent.disableScrollPropagation(container);
-
         return container;
       }
     });
 
     new FireReportControl().addTo(window.map);
+    wireUI();
 
-    // ── Wire up interactions after DOM is ready ─────────────────────────
-    // Toggle open/close
-    document.getElementById('fr-toggle-btn').addEventListener('click', () => {
-      document.getElementById('fr-panel').classList.toggle('open');
-    });
-    document.getElementById('fr-close-btn').addEventListener('click', () => {
-      document.getElementById('fr-panel').classList.remove('open');
-    });
-
-    // Severity buttons
-    let severity = 'high';
-    document.querySelectorAll('.fr-sev-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        severity = btn.dataset.sev;
-        document.querySelectorAll('.fr-sev-btn').forEach(b => {
-          b.className = 'fr-sev-btn';
-        });
-        btn.classList.add('active-' + severity);
-      });
-    });
-
-    // Geolocation
-    document.getElementById('fr-geo-btn').addEventListener('click', () => {
-      if (!navigator.geolocation) return showToast('Geolocation not supported.', false);
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          document.getElementById('fr-lat').value = pos.coords.latitude.toFixed(5);
-          document.getElementById('fr-lng').value = pos.coords.longitude.toFixed(5);
-        },
-        () => showToast('Could not get location.', false)
-      );
-    });
-
-    // Submit
-    document.getElementById('fr-submit').addEventListener('click', () => {
-      const address = document.getElementById('fr-address').value.trim();
-      const lat = parseFloat(document.getElementById('fr-lat').value);
-      const lng = parseFloat(document.getElementById('fr-lng').value);
-
-      if (!address) return showToast('Please enter an address.', false);
-      if (isNaN(lat) || isNaN(lng)) return showToast('Please enter or detect coordinates.', false);
-
-      const report = {
-        id: Date.now(),
-        address, lat, lng, severity,
-        type: document.getElementById('fr-type').value,
-        notes: document.getElementById('fr-notes').value.trim(),
-        timestamp: new Date().toLocaleString()
-      };
-
-      const all = JSON.parse(localStorage.getItem('fireReports') || '[]');
-      all.push(report);
-      localStorage.setItem('fireReports', JSON.stringify(all));
-
-      // Drop a marker on the map immediately
-      addReportMarker(report);
-
-      // Reset fields
-      document.getElementById('fr-address').value = '';
-      document.getElementById('fr-lat').value = '';
-      document.getElementById('fr-lng').value = '';
-      document.getElementById('fr-notes').value = '';
-      document.getElementById('fr-type').value = '';
-      severity = 'high';
-      document.querySelectorAll('.fr-sev-btn').forEach(b => b.className = 'fr-sev-btn');
-      document.getElementById('fr-sev-high').classList.add('active-high');
-
-      showToast(`Saved locally. ${all.length} note${all.length !== 1 ? 's' : ''} in this browser.`, true);
-      updateCount(all.length);
-    });
-
-    // Load existing reports onto the map on startup
     const saved = JSON.parse(localStorage.getItem('fireReports') || '[]');
     saved.forEach(addReportMarker);
     if (saved.length) updateCount(saved.length);
   }
 
-  /* ── Helpers ─────────────────────────────────────────────────────────── */
+  /* ── Wire up all UI interactions ─────────────────────────────────────── */
+  function wireUI() {
+    document.getElementById('fr-toggle-btn').addEventListener('click', () => {
+      const panel = document.getElementById('fr-panel');
+      const opening = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+
+      if (opening && !miniMap) {
+        initMiniMap();
+      } else if (opening && miniMap) {
+        setTimeout(() => miniMap.invalidateSize(), 50);
+      }
+    });
+
+    document.getElementById('fr-close-btn').addEventListener('click', () => {
+      document.getElementById('fr-panel').classList.remove('open');
+    });
+
+    document.getElementById('fr-locate-btn').addEventListener('click', locateUser);
+
+    document.querySelectorAll('.fr-sev-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        severity = btn.dataset.sev;
+        document.querySelectorAll('.fr-sev-btn').forEach(b => b.className = 'fr-sev-btn');
+        btn.classList.add('active-' + severity);
+      });
+    });
+
+    document.getElementById('fr-submit').addEventListener('click', submitReport);
+  }
+
+  /* ── Mini-map initialisation ─────────────────────────────────────────── */
+  function initMiniMap() {
+    miniMap = L.map('fr-minimap', {
+      center: [47.5, -120.5],
+      zoom: 6,
+      zoomControl: true,
+      attributionControl: false,
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 19,
+    }).addTo(miniMap);
+
+    miniMap.on('click', function (e) {
+      placePin(e.latlng.lat, e.latlng.lng);
+    });
+
+    locateUser();
+  }
+
+  /* ── Place / move the pin ────────────────────────────────────────────── */
+  function placePin(lat, lng) {
+    pickedLat = lat;
+    pickedLng = lng;
+
+    const fireIcon = L.divIcon({
+      className: '',
+      html: `<div style="font-size:26px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));transform:translateX(-50%) translateY(-100%);">📍</div>`,
+      iconAnchor: [0, 0],
+    });
+
+    if (pinMarker) {
+      pinMarker.setLatLng([lat, lng]);
+    } else {
+      pinMarker = L.marker([lat, lng], { icon: fireIcon, draggable: true }).addTo(miniMap);
+      pinMarker.on('dragend', function () {
+        const pos = pinMarker.getLatLng();
+        updateCoordDisplay(pos.lat, pos.lng);
+        pickedLat = pos.lat;
+        pickedLng = pos.lng;
+      });
+    }
+
+    updateCoordDisplay(lat, lng);
+    document.getElementById('fr-map-wrap').classList.add('selected');
+    document.getElementById('fr-map-hint').classList.add('hidden');
+
+    const submitBtn = document.getElementById('fr-submit');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit Report';
+  }
+
+  function updateCoordDisplay(lat, lng) {
+    const el = document.getElementById('fr-coords');
+    el.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    el.classList.add('set');
+  }
+
+  /* ── Center mini-map on user's GPS location ──────────────────────────── */
+  function locateUser() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+
+        if (miniMap) {
+          miniMap.setView([userLat, userLng], 13);
+          placeUserDot(userLat, userLng);
+        }
+      },
+      () => console.info('fire-report.js: geolocation denied or unavailable')
+    );
+  }
+
+  /* ── Place / update the blue "you are here" dot on the mini-map ──────── */
+  function placeUserDot(lat, lng) {
+    const blueDotIcon = L.divIcon({
+      className: '',
+      html: `
+        <div style="
+          width: 16px; height: 16px;
+          background: #4A90E2;
+          border: 3px solid #fff;
+          border-radius: 50%;
+          box-shadow: 0 0 0 3px rgba(74,144,226,0.35), 0 2px 6px rgba(0,0,0,0.4);
+        "></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+
+    if (userDot) {
+      userDot.setLatLng([lat, lng]);
+    } else {
+      userDot = L.marker([lat, lng], { icon: blueDotIcon, interactive: false, zIndexOffset: -100 })
+        .addTo(miniMap);
+    }
+  }
+
+  /* ── Reverse geocode lat/lng → place name + zip ──────────────────────── */
+  async function reverseGeocode(lat, lng) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      const a = data.address || {};
+
+      // Build a readable place name: neighbourhood/suburb/town + state
+      const place = a.neighbourhood || a.suburb || a.village || a.town || a.city || a.county || '';
+      const zip   = a.postcode || '';
+      const state = a.state_abbreviation || (a.state ? a.state.slice(0, 2).toUpperCase() : '');
+
+      if (place && zip)   return `${place}, ${state} ${zip}`.trim();
+      if (place)          return `${place}, ${state}`.trim();
+      if (zip)            return `${state} ${zip}`.trim();
+      return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    } catch {
+      return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    }
+  }
+
+  /* ── Submit the report ───────────────────────────────────────────────── */
+  async function submitReport() {
+    if (pickedLat === null || pickedLng === null) {
+      return showToast('Please tap the map to select a fire location.', false);
+    }
+
+    // Disable button while geocoding so user can't double-submit
+    const submitBtn = document.getElementById('fr-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Getting location name…';
+
+    // Reverse geocode to get a human-readable place name
+    const locationName = await reverseGeocode(pickedLat, pickedLng);
+
+    const report = {
+      id:           Date.now(),
+      lat:          pickedLat,
+      lng:          pickedLng,
+      locationName,
+      severity,
+      type:         document.getElementById('fr-type').value,
+      notes:        document.getElementById('fr-notes').value.trim(),
+      timestamp:    new Date().toLocaleString(),
+    };
+
+    const all = JSON.parse(localStorage.getItem('fireReports') || '[]');
+    all.push(report);
+    localStorage.setItem('fireReports', JSON.stringify(all));
+
+    // Drop marker on the main map
+    addReportMarker(report);
+
+    // ── Refresh the Wildfires tab community reports section ──
+    if (typeof renderReportCards === 'function') renderReportCards();
+
+    // Reset form
+    pickedLat = null;
+    pickedLng = null;
+    if (pinMarker) { miniMap.removeLayer(pinMarker); pinMarker = null; }
+    document.getElementById('fr-map-wrap').classList.remove('selected');
+    document.getElementById('fr-map-hint').classList.remove('hidden');
+    document.getElementById('fr-coords').textContent = 'No location selected';
+    document.getElementById('fr-coords').classList.remove('set');
+    document.getElementById('fr-notes').value = '';
+    document.getElementById('fr-type').value = '';
+    severity = 'high';
+    document.querySelectorAll('.fr-sev-btn').forEach(b => b.className = 'fr-sev-btn');
+    document.getElementById('fr-sev-high').classList.add('active-high');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Pin a location to submit';
+
+    locateUser();
+    showToast(`Report saved! ${all.length} total in this browser.`, true);
+    updateCount(all.length);
+  }
+
+  /* ── Add a marker to the main map ───────────────────────────────────── */
   function addReportMarker(r) {
     const color = r.severity === 'high'   ? '#E24B4A'
                 : r.severity === 'medium' ? '#EF9F27'
                 :                           '#639922';
 
-    const marker = L.circleMarker([r.lat, r.lng], {
-      radius: 10,
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.85,
-      weight: 2
-    }).addTo(window.map);
-
-    marker.bindPopup(`
-      <b>Local fire note: ${r.address}</b><br>
+    L.circleMarker([r.lat, r.lng], {
+      radius: 10, color, fillColor: color, fillOpacity: 0.85, weight: 2,
+    }).addTo(window.map).bindPopup(`
+      <b>🔥 Community Report</b><br>
       Severity: <b>${r.severity}</b><br>
-      ${r.type ? 'Type: ' + r.type + '<br>' : ''}
+      ${r.type  ? 'Type: '  + r.type  + '<br>' : ''}
       ${r.notes ? '<i>' + r.notes + '</i><br>' : ''}
       <small>${r.timestamp}</small>
     `);
   }
 
+  /* ── Helpers ─────────────────────────────────────────────────────────── */
   function showToast(msg, ok) {
     const t = document.getElementById('fr-toast');
     if (!t) return;
-    t.className = 'fr-toast ' + (ok ? 'success' : 'error');
+    t.className   = 'fr-toast ' + (ok ? 'success' : 'error');
     t.textContent = msg;
   }
 
@@ -389,10 +584,24 @@
   }
 
   /* ── Boot ────────────────────────────────────────────────────────────── */
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initFireReportControl);
-  } else {
+  if (window.map) {
     initFireReportControl();
+  } else {
+    window.addEventListener('mapReady', initFireReportControl);
+  }
+
+  // Ask for location immediately on page load so the browser permission
+  // prompt appears right away rather than waiting for the panel to open.
+  // We store the coords in userLat/userLng for sorting — the dot only
+  // appears on the mini-map once it's initialized.
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+      },
+      () => console.info('fire-report.js: location permission denied on load')
+    );
   }
 
 })();

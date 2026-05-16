@@ -2,8 +2,7 @@
 // Sets up the Leaflet map, base tile layer, and WA state outline.
 // The `map` variable is global so shelters.js and wildfires.js can add markers.
 
-const map = L.map('map', { zoomControl: false });
-window.map = map;
+const map = window.map = L.map('map', { zoomControl: false });
 
 // Put zoom controls in bottom-right so they don't clash with the sidebar
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -27,8 +26,11 @@ const WA_OUTLINE = [
 ];
 
 L.polygon(WA_OUTLINE, {
-  color: '#267a4f',
-  fillColor: '#267a4f',
-  fillOpacity: 0.03,
-  weight: 3,
+  color: '#4caf72',
+  fillColor: '#4caf72',
+  fillOpacity: 0.05,
+  weight: 2,
 }).addTo(map);
+
+// Notify fire-report.js that the map is ready
+window.dispatchEvent(new Event('mapReady'));
