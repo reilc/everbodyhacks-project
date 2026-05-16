@@ -84,6 +84,15 @@ body {
   position: absolute; left: 12px; top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted); font-size: 14px; pointer-events: none;
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.search-icon img {
+  display: block;
+  height: 16px;
+  opacity: 0.58;
+  width: 16px;
 }
 
 /* ── Tabs ── */

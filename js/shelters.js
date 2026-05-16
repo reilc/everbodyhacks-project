@@ -61,7 +61,7 @@ function selectCity(city) {
 
 function loadResourcesForCity(city) {
   const wildfireResources = HISTORICAL_2024_SHELTERS
-    .filter(shelter => wasActiveOnSimulationDate(shelter))
+    .filter(shelter => wasActiveOnIncidentDate(shelter))
     .filter(hasFullAddress)
     .map(shelter => ({
       ...shelter,
@@ -74,7 +74,7 @@ function loadResourcesForCity(city) {
     .map(resource => ({
       ...resource,
       fire: 'Food / basic needs resource',
-      opened: 'Included for the July 4, 2024 simulation from documented 2024 food/resource service activity. Confirm real-time hours, shelter beds, and eligibility with the provider or WA 211 before traveling.',
+      opened: 'Included from documented food/resource service activity. Confirm real-time hours, shelter beds, and eligibility with the provider or WA 211 before traveling.',
       activeStart: resource.activeStart || '2024-07-01',
       activeEnd: resource.activeEnd || '2024-09-30',
       dataset: 'Confirmed July 2024 food/resource provider',
@@ -109,7 +109,7 @@ function loadResourcesForFire(fire) {
   }
 
   const wildfireResources = HISTORICAL_2024_SHELTERS
-    .filter(resource => wasActiveOnSimulationDate(resource))
+    .filter(resource => wasActiveOnIncidentDate(resource))
     .filter(hasFullAddress)
     .map(resource => ({
       ...resource,
@@ -122,7 +122,7 @@ function loadResourcesForFire(fire) {
     .map(resource => ({
       ...resource,
       fire: fire.name,
-      opened: 'Included for the July 4, 2024 simulation from documented 2024 food/resource service activity near this fire area. Confirm real-time hours, shelter beds, and eligibility with the provider or WA 211 before traveling.',
+      opened: 'Included from documented food/resource service activity near this fire area. Confirm real-time hours, shelter beds, and eligibility with the provider or WA 211 before traveling.',
       activeStart: resource.activeStart || '2024-07-01',
       activeEnd: resource.activeEnd || '2024-09-30',
       dataset: 'Confirmed July 2024 food/resource provider',
@@ -149,8 +149,8 @@ function scoreResource(resource) {
   return datasetBoost + resource.distance;
 }
 
-function wasActiveOnSimulationDate(shelter) {
-  return SIMULATION_FIRE_DATE >= shelter.activeStart && SIMULATION_FIRE_DATE <= shelter.activeEnd;
+function wasActiveOnIncidentDate(shelter) {
+  return INCIDENT_DATE >= shelter.activeStart && INCIDENT_DATE <= shelter.activeEnd;
 }
 
 function hasFullAddress(resource) {
@@ -171,9 +171,9 @@ function renderShelters() {
     const activeCount = [
       ...HISTORICAL_2024_SHELTERS,
       ...COMMUNITY_RESOURCE_SITES,
-    ].filter(wasActiveOnSimulationDate).filter(hasFullAddress).length;
-    setShelterStatus('ok', `${activeCount} resources included for the ${SIMULATION_FIRE_DATE_LABEL} simulation`);
-    list.innerHTML = `<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed food banks, resource centers, and documented wildfire shelters for the ${SIMULATION_FIRE_DATE_LABEL} simulation.</div>`;
+    ].filter(wasActiveOnIncidentDate).filter(hasFullAddress).length;
+    setShelterStatus('ok', `${activeCount} resources included for ${INCIDENT_DATE_LABEL}`);
+    list.innerHTML = `<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed food banks, resource centers, and documented wildfire shelters.</div>`;
     return;
   }
 
@@ -186,7 +186,7 @@ function renderShelters() {
   }
 
   if (!allShelters.length) {
-    list.innerHTML = `<div class="empty"><div class="icon">Resources</div>No confirmed food/shelter resources for the ${SIMULATION_FIRE_DATE_LABEL} simulation found within ${SHELTER_SEARCH_RADIUS_MILES} miles of ${selectedCity.name}.</div>`;
+    list.innerHTML = `<div class="empty"><div class="icon">Resources</div>No confirmed food/shelter resources found within ${SHELTER_SEARCH_RADIUS_MILES} miles of ${selectedCity.name}.</div>`;
     return;
   }
 
@@ -215,7 +215,7 @@ function renderResourceCards(list) {
     card.innerHTML = `
       <div class="card-title">
         ${shelter.name}
-        <span class="badge open">${shelter.type}</span>
+        <span class="badge open">${formatResourceType(shelter.type)}</span>
       </div>
       <div class="card-detail">
         <strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi<br>
@@ -241,6 +241,13 @@ function renderResourceCards(list) {
 
     shelterMarkers.push(marker);
   });
+}
+
+function formatResourceType(type) {
+  return String(type || 'resource')
+    .replace(/^2024\s+/i, '')
+    .replace(/\b2024\s+/gi, '')
+    .trim();
 }
 
 function renderCityMatches(list) {

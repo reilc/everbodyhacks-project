@@ -8,7 +8,7 @@ async function loadWildfires() {
   const status = document.getElementById('fire-status');
 
   dot.className = 'status-dot loading';
-  status.textContent = `Loading ${SIMULATION_FIRE_DATE_LABEL} fire simulation...`;
+  status.textContent = `Loading ${INCIDENT_DATE_LABEL} fire records...`;
   allFires = { stats: [], perimeters: [] };
 
   try {
@@ -21,11 +21,11 @@ async function loadWildfires() {
     try {
       const perimeters = await loadFirePerimeters();
       allFires = { stats, perimeters };
-      status.textContent = `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
+      status.textContent = `${INCIDENT_DATE_LABEL}: ${stats.length} WA DNR fire records`;
       renderFires();
     } catch (perimeterErr) {
       console.warn('2024 wildfire perimeter layer error:', perimeterErr);
-      status.textContent = `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
+      status.textContent = `${INCIDENT_DATE_LABEL}: ${stats.length} WA DNR fire records`;
     }
   } catch (err) {
     console.error('2024 wildfire data error:', err);
@@ -38,7 +38,7 @@ async function loadWildfires() {
 
 async function loadDnrFireStats() {
   const params = new URLSearchParams({
-    where: `DSCVR_DT >= DATE '${SIMULATION_FIRE_DATE}' AND DSCVR_DT < DATE '2024-07-05'`,
+    where: `DSCVR_DT >= DATE '${INCIDENT_DATE}' AND DSCVR_DT < DATE '2024-07-05'`,
     outFields: 'OBJECTID,INCIDENT_NM,COUNTY_LABEL_NM,FIREGCAUSE_LABEL_NM,ACRES_BURNED,DSCVR_DT,FIREEVNT_CLASS_LABEL_NM,LAT_COORD,LON_COORD,START_OWNER_AGENCY_NM,START_JURISDICTION_AGENCY_NM,PROTECTION_TYPE,REGION_NAME',
     returnGeometry: 'true',
     outSR: '4326',
@@ -204,8 +204,8 @@ function updateFireStatus(stats, perimeters) {
   if (!status) return;
 
   status.textContent = selectedCity
-    ? `${stats.length} ${SIMULATION_FIRE_DATE_LABEL} fire records within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}`
-    : `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
+    ? `${stats.length} ${INCIDENT_DATE_LABEL} fire records within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}`
+    : `${INCIDENT_DATE_LABEL}: ${stats.length} WA DNR fire records`;
 }
 
 // ── Community Reports section ──────────────────────────────────────────
