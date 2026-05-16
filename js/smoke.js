@@ -74,15 +74,6 @@ function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
 
-  const today = new Date();
-  const options = { month: 'long', day: 'numeric', year: 'numeric' };
-  const formattedDate = today.toLocaleDateString('en-US', options);
-
-  const statusTextEl = document.getElementById('smoke-status-text');
-  if (statusTextEl) {
-    statusTextEl.innerText = `Smoke index for ${formattedDate}`;
-  }
-
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   if (!stats.length) {
     smokeList.innerHTML = '<div class="empty">No wildfire focal targets found for tracking.</div>';
