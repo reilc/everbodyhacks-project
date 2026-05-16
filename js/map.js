@@ -7,9 +7,10 @@ const map = window.map = L.map('map', { zoomControl: false });
 // Put zoom controls in bottom-right so they don't clash with the sidebar
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// Light map tiles improve text contrast and show waterways in blue.
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors',
+// Minimal light basemap with visible blue water.
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+  subdomains: 'abcd',
   maxZoom: 19,
 }).addTo(map);
 
@@ -26,10 +27,10 @@ const WA_OUTLINE = [
 ];
 
 L.polygon(WA_OUTLINE, {
-  color: '#6b7280',
-  fillColor: '#6b7280',
-  fillOpacity: 0.02,
-  weight: 2,
+  color: '#8f98a3',
+  fillColor: '#f7f7f7',
+  fillOpacity: 0.08,
+  weight: 1.5,
 }).addTo(map);
 
 // Notify fire-report.js that the map is ready
