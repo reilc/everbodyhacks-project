@@ -117,7 +117,7 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       });
 
       gridCell.bindPopup(`
-        <div class="popup-title">Smoke Risk Cell</div>
+        <div class="popup-title">:Smoke Risk Cell</div>
         <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
         <div class="popup-row"><strong>Modeled Risk Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);
