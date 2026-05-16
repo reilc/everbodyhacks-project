@@ -235,9 +235,7 @@ function renderFireCards(list, stats, perimeters) {
 
   list.innerHTML = `
     <div class="empty" style="padding:14px 12px;text-align:left">
-      <strong>${stats.length}</strong> fire records occurred on ${SIMULATION_FIRE_DATE_LABEL}, the busiest verified 2024 day in WA DNR data.<br>
-      Red halos show the live-style simulation; red polygons show mapped 2024 perimeter context.<br>
-      The list below shows this day's fire records.
+      <strong>${stats.length}</strong> current fires in Washington.
     </div>`;
 
   largestStats.forEach(fire => {
