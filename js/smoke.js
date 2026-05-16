@@ -25,23 +25,27 @@ function renderSmoke() {
 
 function renderSmokeHalos(stats) {
   stats.forEach(fire => {
-
     const aqiScore = fire.aqi || Math.floor(Math.random() * (280 - 15)) + 15;
     const metrics = getAQIMetrics(aqiScore);
 
+    const baseRadius = 8000;
+    const acreageBonus = Math.min(Math.sqrt(fire.acres || 0) * 150, 25000); 
+    const dynamicRadius = baseRadius + acreageBonus;
+
     const smokeZone = L.circle([fire.lat, fire.lon], {
-        radius: 30000, 
+        radius: dynamicRadius, 
         color: metrics.color,
         fillColor: metrics.color,    
-        fillOpacity: metrics.fillOpacity * 0.35, 
-        weight: 1.5,
-        dashArray: "6, 6",
+        fillOpacity: metrics.fillOpacity * 0.18, 
+        weight: 1,
+        dashArray: "3, 6",
         interactive: true
     }).addTo(map);
 
     smokeZone.bindPopup(`
-      <div class="popup-title">💨 ${fire.name} Plume Region</div>
-      <div class="popup-row"><strong>Air Quality Index:</strong> <span style="color:${metrics.color}; font-weight:bold;">${aqiScore} (${metrics.status})</span></div>
+      <div class="popup-title">💨 ${fire.name} Airshed Impact</div>
+      <div class="popup-row"><strong>Local AQI:</strong> <span style="color:${metrics.color}; font-weight:bold;">${aqiScore} (${metrics.status})</span></div>
+      <div class="popup-row"><strong>Acreage Size:</strong> ${fire.acres ? Math.round(fire.acres).toLocaleString() : '0'} acres</div>
     `);
 
     smokeMarkers.push(smokeZone);
