@@ -99,7 +99,7 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       });
 
       gridCell.bindPopup(`
-        <div class="popup-title">Simulated Smoke Risk Cell</div>
+        <div class="popup-title">Smoke Risk Cell</div>
         <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
         <div class="popup-row"><strong>Modeled Risk Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);
@@ -133,7 +133,7 @@ function buildStaticUI(container, stats) {
     card.innerHTML = `
       <div class="card-title">${f.name} Sector</div>
       <div class="card-detail">
-        <strong>Modeled Smoke Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
+        <strong>Smoke Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
         <strong>Risk Designation:</strong> ${metrics.status}
       </div>`;
     card.addEventListener('click', () => map.flyTo([f.lat, f.lon], 10, { duration: 0.8 }));
