@@ -26,9 +26,9 @@ const WA_OUTLINE = [
 ];
 
 L.polygon(WA_OUTLINE, {
-  color: '#4caf72',
-  fillColor: '#4caf72',
-  fillOpacity: 0.05,
+  color: '#6b7280',
+  fillColor: '#6b7280',
+  fillOpacity: 0.02,
   weight: 2,
 }).addTo(map);
 

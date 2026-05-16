@@ -367,9 +367,9 @@ const COMMUNITY_RESOURCE_SITES = [
     sourceUrl: 'https://agr.wa.gov/services/food-access/hunger-in-wa/tefap-data/2024-tefap-data',
   },
   {
-    name: 'Goldendale Community Food Bank',
+    name: 'Goldendale Food Bank',
     type: '2024 TEFAP food pantry',
-    address: '104 E Simcoe Dr, Goldendale, WA 98620',
+    address: '112 E Main St, Goldendale, WA 98620',
     city: 'Goldendale',
     lat: 45.8207,
     lon: -120.8217,

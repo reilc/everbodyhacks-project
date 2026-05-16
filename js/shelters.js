@@ -228,11 +228,11 @@ function renderResourceCards(list) {
     list.appendChild(card);
 
     const marker = L.circleMarker([shelter.lat, shelter.lon], {
-      color: '#4caf72',
-      fillColor: '#4caf72',
-      fillOpacity: 0.9,
-      radius: 7,
-      weight: 2,
+      color: '#ffffff',
+      fillColor: '#1f6feb',
+      fillOpacity: 0.95,
+      radius: 8,
+      weight: 3,
     }).addTo(map);
 
     marker.bindPopup(`

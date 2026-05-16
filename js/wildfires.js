@@ -360,7 +360,9 @@ function renderFirePoints(stats) {
       ${fire.discovered ? `<div class="popup-row"><strong>Discovered:</strong> ${fire.discovered}</div>` : ''}
       <div class="popup-row"><strong>Source:</strong> WA DNR Fire Statistics</div>
     `);
-    fireMarkers.push(marker);
+    heatHalo.on('click', () => selectFire(fire));
+    marker.on('click', () => selectFire(fire));
+    fireMarkers.push(heatHalo, marker);
   });
 }
 
@@ -394,8 +396,24 @@ function renderFireCards(list, stats, perimeters) {
         <strong>Cause:</strong> ${fire.cause}<br>
         <strong>Source:</strong> WA DNR Fire Statistics
       </div>`;
-    card.addEventListener('click', () => map.flyTo([fire.lat, fire.lon], 11, { duration: 0.8 }));
+    card.addEventListener('click', () => selectFire(fire));
     list.appendChild(card);
+  });
+}
+
+function selectFire(fire) {
+  loadResourcesForFire(fire);
+  renderFires();
+  map.flyTo([fire.lat, fire.lon], 10, { duration: 0.8 });
+  switchToResourcesTab();
+}
+
+function switchToResourcesTab() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === 'resources');
+  });
+  document.querySelectorAll('.panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'panel-resources');
   });
 }
 
