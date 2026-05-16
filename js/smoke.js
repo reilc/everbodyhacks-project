@@ -4,7 +4,17 @@
 
 let smokeLayersGroup = L.layerGroup();
 
-// ── MAIN ENTRY POINT CALLED ON DATA LOAD ──
+const WASHINGTON_COUNTY_COORDINATES = {
+  "Chelan County": [47.4235, -120.3103],
+  "Stevens County": [48.5448, -117.9052],
+  "Yakima County": [46.6021, -120.5059],
+  "Okanogan County": [48.3617, -119.5786],
+  "Ferry County": [48.6479, -118.6019],
+  "Walla Walla County": [46.0646, -118.3430],
+  "Kittitas County": [46.9965, -120.5478],
+  "Douglas County": [47.4851, -119.7423]
+};
+
 function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
@@ -15,39 +25,29 @@ function renderSmoke() {
     return;
   }
 
-  // 1. Build the list container workspace
   buildStaticUI(smokeList, stats);
 
-  // 2. Compute and paint the edge-to-edge radar mesh layer
   generateWeatherRadarGrid(stats, 0);
 }
 
-// ── WEATHER RADAR ENGINE: Inverse Distance Weighting (IDW) Grid Interpolation ──
 function generateWeatherRadarGrid(stats, dayOffset) {
-  // Clear out the previous canvas layers cleanly
   smokeLayersGroup.clearLayers();
   map.removeLayer(smokeLayersGroup);
 
-  // Define bounding box limits spanning across the entirety of Washington State
   const latMin = 45.5, latMax = 49.0, latStep = 0.12; 
   const lonMin = -124.8, lonMax = -116.9, lonStep = 0.18;
 
-  // Scan across the geographical coordinate matrix grid lines
   for (let lat = latMin; lat <= latMax; lat += latStep) {
     for (let lon = lonMin; lon <= lonMax; lon += lonStep) {
       
       let totalWeight = 0;
       let interpolatedAQI = 0;
 
-      // Calculate the cumulative pollution drift footprint reaching this grid intersection coordinate
       stats.forEach((fire, idx) => {
         const distance = Math.sqrt(Math.pow(lat - fire.lat, 2) + Math.pow(lon - fire.lon, 2));
-        
-        // Static baseline AQI variance locked onto our fixed date seed pattern
         const seedValue = (fire.lat + fire.lon + idx + dayOffset) * 100;
         const fireAQIBaseline = Math.floor((Math.abs(Math.sin(seedValue)) * 260) + 30);
         
-        // Inverse distance formula weight coefficient 
         const weight = 1 / Math.pow(distance + 0.15, 2); 
         totalWeight += weight;
         interpolatedAQI += fireAQIBaseline * weight;
@@ -56,15 +56,13 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       const finalGridAQI = Math.min(Math.floor(interpolatedAQI / totalWeight), 350);
       const metrics = getAQIMetrics(finalGridAQI);
 
-      // Skip painting grids that are entirely clean to keep map legible
       if (finalGridAQI < 35) continue; 
 
-      // Render seamless rectangular tile grid cells to cover the full canvas scale
       const bounds = [[lat, lon], [lat + latStep, lon + lonStep]];
       const gridCell = L.rectangle(bounds, {
         color: 'transparent',
         fillColor: metrics.color,
-        fillOpacity: metrics.fillOpacity * 0.42, // Balanced opacity contrast against dark tiles
+        fillOpacity: metrics.fillOpacity * 0.42,
         interactive: true
       });
 
@@ -78,42 +76,44 @@ function generateWeatherRadarGrid(stats, dayOffset) {
     }
   }
 
-  // Only project the layers if the smoke view panel is currently selected active
   const activeTab = document.querySelector('.tab.active');
   if (activeTab && activeTab.dataset.tab === 'smoke') {
     smokeLayersGroup.addTo(map);
   }
 }
 
-// ── STATIC INTERFACE GENERATOR ──
 function buildStaticUI(container, stats) {
   container.innerHTML = `<div id="smoke-cards-wrapper"></div>`;
-
-  // Render supporting cards directly into the panel layout
   const cardsWrapper = document.getElementById('smoke-cards-wrapper');
-  
+
+  const seenCounties = new Set();
+
   stats.forEach(f => {
+    let countyName = f.county || "Washington State";
+    if (countyName !== "Washington State" && !countyName.toLowerCase().includes("county")) {
+      countyName += " County";
+    }
+
+    if (seenCounties.has(countyName)) return;
+    seenCounties.add(countyName);
+
     const localSeed = (f.lat + f.lon + 0) * 100;
     const aqi = Math.floor((Math.abs(Math.sin(localSeed)) * 240) + 40);
     const metrics = getAQIMetrics(aqi);
 
-    // Clean up county text if it already includes the word "County" to avoid duplication
-    let regionName = f.county || "Washington State";
-    if (regionName !== "Washington State" && !regionName.toLowerCase().includes("county")) {
-      regionName += " County";
-    }
+    const panCoordinates = WASHINGTON_COUNTY_COORDINATES[countyName] || [f.lat, f.lon];
 
     const card = document.createElement('div');
     card.className = 'card';
     card.style.borderLeft = `4px solid ${metrics.color}`;
     card.innerHTML = `
-      <div class="card-title">${regionName} Air Quality Zone</div>
+      <div class="card-title">${countyName} Air Quality Zone</div>
       <div class="card-detail">
-        <strong>Nearby Incident:</strong> ${f.name}<br>
         <strong>Station AQI Projection:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
         <strong>Risk Designation:</strong> ${metrics.status}
       </div>`;
-    card.addEventListener('click', () => map.flyTo([f.lat, f.lon], 10, { duration: 0.8 }));
+    
+    card.addEventListener('click', () => map.flyTo(panCoordinates, 9, { duration: 0.8 }));
     cardsWrapper.appendChild(card);
   });
 }
