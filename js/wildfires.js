@@ -1,5 +1,7 @@
 // wildfires.js
 // Loads WA DNR 2024 fire-statistic points statewide plus mapped 2024 fire perimeters.
+// Also renders a "Community Reports" section at the top of the fires panel,
+// fed by reports saved in localStorage by fire-report.js.
 
 async function loadWildfires() {
   const dot = document.getElementById('fire-dot');
@@ -159,8 +161,15 @@ function renderFires() {
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   const perimeters = Array.isArray(allFires.perimeters) ? allFires.perimeters : [];
 
+  // Always clear and render community reports section first
+  list.innerHTML = '';
+  renderReportCards(list);
+
   if (!stats.length && !perimeters.length) {
-    list.innerHTML = '<div class="empty"><div class="icon">Fire</div>No 2024 wildfire records loaded.</div>';
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.innerHTML = '<div class="icon">🔥</div>No 2024 wildfire records loaded.';
+    list.appendChild(empty);
     return;
   }
 
@@ -169,18 +178,102 @@ function renderFires() {
   renderFireCards(list, stats, perimeters);
 }
 
+// ── Community Reports section ──────────────────────────────────────────
+// Also called by fire-report.js after each new submission to refresh the list.
+function renderReportCards(container) {
+  // When called with no argument (from fire-report.js), just refresh the
+  // reports section in place without touching the historical records below.
+  if (!container) {
+    const existing = document.getElementById('fr-reports-section');
+    if (existing) {
+      const parent = existing.parentNode;
+      const next = existing.nextSibling;
+      existing.remove();
+      const section = buildReportSection();
+      parent.insertBefore(section, next);
+    }
+    return;
+  }
+
+  // Called with a container — prepend a fresh section before historical data
+  const section = buildReportSection();
+  container.insertBefore(section, container.firstChild);
+}
+
+function buildReportSection() {
+  const reports = JSON.parse(localStorage.getItem('fireReports') || '[]');
+
+  const section = document.createElement('div');
+  section.id = 'fr-reports-section';
+
+  // Section header
+  const header = document.createElement('div');
+  header.className = 'section-header';
+  header.innerHTML = `
+    <span class="section-label reported">🚨 Community Reports</span>
+    <span class="section-count">${reports.length}</span>
+  `;
+  section.appendChild(header);
+
+  if (reports.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty reports-empty';
+    empty.innerHTML = `
+      <div class="icon">📭</div>
+      No reports yet — use the<br>"Report a Fire" button on the map
+    `;
+    section.appendChild(empty);
+  } else {
+    // Most recent first
+    [...reports].reverse().forEach(r => {
+      const colors =
+        r.severity === 'high'   ? { bg:'#FCEBEB', border:'#F09595', text:'#791F1F', dot:'#E24B4A' } :
+        r.severity === 'medium' ? { bg:'#FAEEDA', border:'#F0C080', text:'#854F0B', dot:'#EF9F27' } :
+                                  { bg:'#EAF3DE', border:'#97C459', text:'#3B6D11', dot:'#639922' };
+
+      const card = document.createElement('div');
+      card.className = 'card report-card';
+      card.style.borderLeft = `3px solid ${colors.dot}`;
+      card.innerHTML = `
+        <div class="card-title">
+          <span style="width:8px;height:8px;border-radius:50%;background:${colors.dot};flex-shrink:0;display:inline-block;"></span>
+          Community Report
+          <span class="badge" style="background:${colors.bg};color:${colors.text};border:1px solid ${colors.border};font-size:10px;padding:2px 7px;border-radius:20px;">${r.severity}</span>
+        </div>
+        <div class="card-detail">
+          ${r.type  ? `<strong>Type:</strong> ${r.type}<br>`   : ''}
+          ${r.notes ? `<strong>Notes:</strong> ${r.notes}<br>` : ''}
+          <strong>📍</strong> ${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}<br>
+          <span style="color:var(--text-muted);font-size:11px;">🕐 ${r.timestamp}</span>
+        </div>
+      `;
+      card.addEventListener('click', () => {
+        window.map.flyTo([r.lat, r.lng], 13, { duration: 0.8 });
+      });
+      section.appendChild(card);
+    });
+  }
+
+  // Divider + historical label
+  const divider = document.createElement('div');
+  divider.className = 'section-divider';
+  section.appendChild(divider);
+
+  const histHeader = document.createElement('div');
+  histHeader.className = 'section-header';
+  histHeader.innerHTML = `<span class="section-label historical">📋 WA DNR 2024 Records</span>`;
+  section.appendChild(histHeader);
+
+  return section;
+}
+
 function renderPerimeters(perimeters) {
   perimeters.forEach(fire => {
     if (!fire.rings) return;
 
     const polygon = L.polygon(
       fire.rings.map(ring => ring.map(point => [point[1], point[0]])),
-      {
-        color: '#ff3333',
-        fillColor: '#ff3333',
-        fillOpacity: 0.3,
-        weight: 1.5,
-      }
+      { color: '#ff3333', fillColor: '#ff3333', fillOpacity: 0.3, weight: 1.5 }
     ).addTo(map);
 
     polygon.bindPopup(`
@@ -210,7 +303,6 @@ function renderFirePoints(stats) {
       ${fire.discovered ? `<div class="popup-row"><strong>Discovered:</strong> ${fire.discovered}</div>` : ''}
       <div class="popup-row"><strong>Source:</strong> WA DNR Fire Statistics</div>
     `);
-
     fireMarkers.push(marker);
   });
 }
@@ -220,12 +312,15 @@ function renderFireCards(list, stats, perimeters) {
     .sort((a, b) => b.acres - a.acres)
     .slice(0, 120);
 
-  list.innerHTML = `
-    <div class="empty" style="padding:14px 12px;text-align:left">
-      <strong>${stats.length.toLocaleString()}</strong> WA DNR 2024 fire records are mapped statewide.<br>
-      <strong>${perimeters.length}</strong> mapped perimeter areas are shown in red.<br>
-      The list below shows the largest fire records.
-    </div>`;
+  const summary = document.createElement('div');
+  summary.className = 'empty';
+  summary.style.cssText = 'padding:14px 12px;text-align:left';
+  summary.innerHTML = `
+    <strong>${stats.length.toLocaleString()}</strong> WA DNR 2024 fire records are mapped statewide.<br>
+    <strong>${perimeters.length}</strong> mapped perimeter areas are shown in red.<br>
+    The list below shows the largest fire records.
+  `;
+  list.appendChild(summary);
 
   largestStats.forEach(fire => {
     const card = document.createElement('div');
@@ -236,12 +331,11 @@ function renderFireCards(list, stats, perimeters) {
         <span class="badge fire">${formatAcres(fire.acres)}</span>
       </div>
       <div class="card-detail">
-        ${fire.county ? `<strong>County:</strong> ${fire.county}<br>` : ''}
+        ${fire.county     ? `<strong>County:</strong> ${fire.county}<br>`         : ''}
         ${fire.discovered ? `<strong>Discovered:</strong> ${fire.discovered}<br>` : ''}
         <strong>Cause:</strong> ${fire.cause}<br>
         <strong>Source:</strong> WA DNR Fire Statistics
       </div>`;
-
     card.addEventListener('click', () => map.flyTo([fire.lat, fire.lon], 11, { duration: 0.8 }));
     list.appendChild(card);
   });

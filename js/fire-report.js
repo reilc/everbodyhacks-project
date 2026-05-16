@@ -293,8 +293,8 @@
   `;
 
   /* ── State ───────────────────────────────────────────────────────────── */
-  let miniMap = null;       // Leaflet instance for the mini-map
-  let pinMarker = null;     // The draggable pin on the mini-map
+  let miniMap = null;
+  let pinMarker = null;
   let pickedLat = null;
   let pickedLng = null;
   let severity = 'high';
@@ -310,12 +310,10 @@
       return;
     }
 
-    // Inject styles
     const style = document.createElement('style');
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    // Create Leaflet control
     const FireReportControl = L.Control.extend({
       options: { position: 'topright' },
       onAdd() {
@@ -331,7 +329,6 @@
     new FireReportControl().addTo(window.map);
     wireUI();
 
-    // Load any existing saved reports onto the main map
     const saved = JSON.parse(localStorage.getItem('fireReports') || '[]');
     saved.forEach(addReportMarker);
     if (saved.length) updateCount(saved.length);
@@ -339,18 +336,14 @@
 
   /* ── Wire up all UI interactions ─────────────────────────────────────── */
   function wireUI() {
-
-    // Toggle panel open/close
     document.getElementById('fr-toggle-btn').addEventListener('click', () => {
       const panel = document.getElementById('fr-panel');
       const opening = !panel.classList.contains('open');
       panel.classList.toggle('open');
 
-      // Initialise the mini-map the first time the panel opens
       if (opening && !miniMap) {
         initMiniMap();
       } else if (opening && miniMap) {
-        // Leaflet needs a size invalidation when shown after being hidden
         setTimeout(() => miniMap.invalidateSize(), 50);
       }
     });
@@ -359,10 +352,8 @@
       document.getElementById('fr-panel').classList.remove('open');
     });
 
-    // "Center on my location" button
     document.getElementById('fr-locate-btn').addEventListener('click', locateUser);
 
-    // Severity buttons
     document.querySelectorAll('.fr-sev-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         severity = btn.dataset.sev;
@@ -371,19 +362,14 @@
       });
     });
 
-    // Submit
     document.getElementById('fr-submit').addEventListener('click', submitReport);
   }
 
   /* ── Mini-map initialisation ─────────────────────────────────────────── */
   function initMiniMap() {
-    // Default center: Washington state
-    const defaultCenter = [47.5, -120.5];
-    const defaultZoom   = 6;
-
     miniMap = L.map('fr-minimap', {
-      center: defaultCenter,
-      zoom: defaultZoom,
+      center: [47.5, -120.5],
+      zoom: 6,
       zoomControl: true,
       attributionControl: false,
     });
@@ -393,12 +379,10 @@
       maxZoom: 19,
     }).addTo(miniMap);
 
-    // Click anywhere on the mini-map to drop/move the pin
     miniMap.on('click', function (e) {
       placePin(e.latlng.lat, e.latlng.lng);
     });
 
-    // Try to center on the user's location right away
     locateUser();
   }
 
@@ -407,15 +391,9 @@
     pickedLat = lat;
     pickedLng = lng;
 
-    // Custom fire pin icon
     const fireIcon = L.divIcon({
       className: '',
-      html: `<div style="
-        font-size: 26px;
-        line-height: 1;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-        transform: translateX(-50%) translateY(-100%);
-      ">📍</div>`,
+      html: `<div style="font-size:26px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));transform:translateX(-50%) translateY(-100%);">📍</div>`,
       iconAnchor: [0, 0],
     });
 
@@ -423,8 +401,6 @@
       pinMarker.setLatLng([lat, lng]);
     } else {
       pinMarker = L.marker([lat, lng], { icon: fireIcon, draggable: true }).addTo(miniMap);
-
-      // Dragging the pin also updates the coords
       pinMarker.on('dragend', function () {
         const pos = pinMarker.getLatLng();
         updateCoordDisplay(pos.lat, pos.lng);
@@ -434,18 +410,14 @@
     }
 
     updateCoordDisplay(lat, lng);
-
-    // Show selected state
     document.getElementById('fr-map-wrap').classList.add('selected');
     document.getElementById('fr-map-hint').classList.add('hidden');
 
-    // Enable submit button now that we have a location
     const submitBtn = document.getElementById('fr-submit');
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Report';
   }
 
-  /* ── Update the coordinate display below the mini-map ────────────────── */
   function updateCoordDisplay(lat, lng) {
     const el = document.getElementById('fr-coords');
     el.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -454,21 +426,12 @@
 
   /* ── Center mini-map on user's GPS location ──────────────────────────── */
   function locateUser() {
-    if (!navigator.geolocation) {
-      return showToast('Geolocation not supported by your browser.', false);
-    }
-
+    if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        if (miniMap) {
-          miniMap.setView([lat, lng], 13);
-        }
+        if (miniMap) miniMap.setView([pos.coords.latitude, pos.coords.longitude], 13);
       },
-      () => {
-        // Silently fail — user just stays on the default WA view
-        console.info('fire-report.js: geolocation denied or unavailable');
-      }
+      () => console.info('fire-report.js: geolocation denied or unavailable')
     );
   }
 
@@ -492,8 +455,11 @@
     all.push(report);
     localStorage.setItem('fireReports', JSON.stringify(all));
 
-    // Drop marker on the MAIN map
+    // Drop marker on the main map
     addReportMarker(report);
+
+    // ── Refresh the Wildfires tab community reports section ──
+    if (typeof renderReportCards === 'function') renderReportCards();
 
     // Reset form
     pickedLat = null;
@@ -513,28 +479,20 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Pin a location to submit';
 
-    // Re-center mini-map on user location for the next report
     locateUser();
-
     showToast(`Report saved! ${all.length} total in this browser.`, true);
     updateCount(all.length);
   }
 
-  /* ── Add a marker to the MAIN map ───────────────────────────────────── */
+  /* ── Add a marker to the main map ───────────────────────────────────── */
   function addReportMarker(r) {
     const color = r.severity === 'high'   ? '#E24B4A'
                 : r.severity === 'medium' ? '#EF9F27'
                 :                           '#639922';
 
-    const marker = L.circleMarker([r.lat, r.lng], {
-      radius: 10,
-      color,
-      fillColor: color,
-      fillOpacity: 0.85,
-      weight: 2,
-    }).addTo(window.map);
-
-    marker.bindPopup(`
+    L.circleMarker([r.lat, r.lng], {
+      radius: 10, color, fillColor: color, fillOpacity: 0.85, weight: 2,
+    }).addTo(window.map).bindPopup(`
       <b>🔥 Community Report</b><br>
       Severity: <b>${r.severity}</b><br>
       ${r.type  ? 'Type: '  + r.type  + '<br>' : ''}
@@ -547,7 +505,7 @@
   function showToast(msg, ok) {
     const t = document.getElementById('fr-toast');
     if (!t) return;
-    t.className  = 'fr-toast ' + (ok ? 'success' : 'error');
+    t.className   = 'fr-toast ' + (ok ? 'success' : 'error');
     t.textContent = msg;
   }
 
