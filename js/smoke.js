@@ -96,14 +96,15 @@ function updateMapLegendContent() {
 
 function buildSmokeLegendHtml() {
   const labels = ['Low smoke', 'Moderate smoke', 'Elevated risk', 'Unhealthy', 'Very unhealthy', 'Hazardous'];
-  const items = EPA_BREAKPOINTS.map((breakpoint, index) => `
+  const listedBreakpoints = EPA_BREAKPOINTS.filter(breakpoint => visibleSmokeBreakpoints.has(breakpoint.class));
+  const items = listedBreakpoints.map(breakpoint => `
     <div class="map-legend-item">
       <span class="map-legend-symbol smoke-risk-symbol" style="background:${breakpoint.color}"></span>
-      <span>${labels[index] || breakpoint.status}</span>
+      <span>${labels[EPA_BREAKPOINTS.indexOf(breakpoint)] || breakpoint.status}</span>
     </div>
   `).join('');
 
-  return `<div class="map-legend-title">Smoke Legend</div>${items}`;
+  return `<div class="map-legend-title">Smoke Legend</div>${items || '<div class="map-legend-note">No risk designations listed</div>'}`;
 }
 
 function hideMapLegend() {
