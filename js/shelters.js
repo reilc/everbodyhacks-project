@@ -24,11 +24,17 @@ function setShelterStatus(kind, message) {
   status.textContent = message;
 }
 
+function clearShelterMarkers() {
+  shelterMarkers.forEach(marker => map.removeLayer(marker));
+  shelterMarkers = [];
+}
+
 function selectCity(city) {
   selectedCity = city;
   selectedFire = null;
   searchQuery = city.name;
   document.getElementById('search-input').value = city.name;
+  clearShelterMarkers();
 
   if (selectedCityMarker) {
     map.removeLayer(selectedCityMarker);
@@ -93,6 +99,7 @@ function loadResourcesForFire(fire) {
   selectedCity = null;
   searchQuery = fire.name || '';
   document.getElementById('search-input').value = fire.name || '';
+  clearShelterMarkers();
 
   if (selectedCityMarker) {
     map.removeLayer(selectedCityMarker);
@@ -145,8 +152,7 @@ function wasActiveOnSimulationDate(shelter) {
 function renderShelters() {
   const list = document.getElementById('resource-list');
 
-  shelterMarkers.forEach(marker => map.removeLayer(marker));
-  shelterMarkers = [];
+  clearShelterMarkers();
 
   if (selectedFire) {
     renderResourceCards(list);
@@ -206,13 +212,9 @@ function renderResourceCards(list) {
         <span class="badge open">${shelter.type}</span>
       </div>
       <div class="card-detail">
-        <strong>Context:</strong> ${shelter.fire || 'Food / basic needs resource'}<br>
         <strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi<br>
-        <strong>Date evidence:</strong> ${formatDateEvidence(shelter)}<br>
-        <strong>Availability evidence:</strong> ${shelter.opened}<br>
         <strong>Address:</strong> ${shelter.address}<br>
-        ${shelter.dataset ? `<strong>Dataset:</strong> ${shelter.dataset}<br>` : ''}
-        <strong>Source:</strong> <a href="${shelter.sourceUrl}" target="_blank" rel="noopener noreferrer">${shelter.sourceName}</a>
+        <strong>What they have:</strong> ${formatResourceOffering(shelter)}
       </div>`;
 
     card.addEventListener('click', () => map.flyTo([shelter.lat, shelter.lon], 13, { duration: 0.8 }));
@@ -228,27 +230,21 @@ function renderResourceCards(list) {
 
     marker.bindPopup(`
       <div class="popup-title">${shelter.name}</div>
-      <div class="popup-row"><strong>Context:</strong> ${shelter.fire || 'Food / basic needs resource'}</div>
-      <div class="popup-row"><strong>Type:</strong> ${shelter.type}</div>
       <div class="popup-row"><strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi</div>
       <div class="popup-row"><strong>Address:</strong> ${shelter.address}</div>
+      <div class="popup-row"><strong>What they have:</strong> ${formatResourceOffering(shelter)}</div>
     `);
 
     shelterMarkers.push(marker);
   });
 }
 
-function formatDateEvidence(shelter) {
+function formatResourceOffering(shelter) {
   if (shelter.dataset === 'Verified wildfire response') {
-    return `Documented ${formatShortDate(shelter.activeStart)} - ${formatShortDate(shelter.activeEnd)}`;
+    return `${shelter.type} for ${shelter.fire}`;
   }
 
-  return `${formatShortDate(shelter.activeStart)} - ${formatShortDate(shelter.activeEnd)} 2024 service evidence`;
-}
-
-function formatShortDate(value) {
-  const date = new Date(`${value}T00:00:00Z`);
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return shelter.type.replace(/^2024\s+/i, '');
 }
 
 function renderCityMatches(list) {

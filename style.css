@@ -136,6 +136,10 @@ body {
 }
 .card:hover      { border-color: var(--accent2); transform: translateX(2px); }
 .card.fire:hover { border-color: var(--fire); }
+.card.fire.selected-fire {
+  border-color: #ff9d2e;
+  box-shadow: 0 0 0 1px rgba(255,157,46,0.35);
+}
 
 .card-title {
   font-size: 13px; font-weight: 700; margin-bottom: 4px;

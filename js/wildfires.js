@@ -218,20 +218,25 @@ function renderPerimeters(perimeters) {
 
 function renderFirePoints(stats) {
   stats.forEach(fire => {
+    const isSelected = isSelectedFire(fire);
+    const fireColor = isSelected ? '#ff9d2e' : '#ff3333';
+    const haloOpacity = isSelected ? 0.30 : 0.18;
+    const markerWeight = isSelected ? 4 : 2;
+
     const heatHalo = L.circle([fire.lat, fire.lon], {
       radius: getFireHaloRadius(fire.acres),
-      color: '#ff3333',
-      fillColor: '#ff3333',
-      fillOpacity: 0.18,
-      weight: 1.5,
+      color: fireColor,
+      fillColor: fireColor,
+      fillOpacity: haloOpacity,
+      weight: isSelected ? 3 : 1.5,
     }).addTo(map);
 
     const marker = L.circleMarker([fire.lat, fire.lon], {
-      color: '#ff3333',
-      fillColor: '#ff3333',
-      fillOpacity: 0.82,
-      radius: getFireRadius(fire.acres),
-      weight: 2,
+      color: fireColor,
+      fillColor: fireColor,
+      fillOpacity: isSelected ? 0.96 : 0.82,
+      radius: getFireRadius(fire.acres) + (isSelected ? 3 : 0),
+      weight: markerWeight,
     }).addTo(map);
 
     marker.bindPopup(`
@@ -251,6 +256,7 @@ function renderFirePoints(stats) {
 
 function selectFire(fire) {
   loadResourcesForFire(fire);
+  renderFires();
   map.flyTo([fire.lat, fire.lon], 10, { duration: 0.8 });
   switchToResourcesTab();
 }
@@ -276,8 +282,9 @@ function renderFireCards(list, stats, perimeters) {
     </div>`;
 
   largestStats.forEach(fire => {
+    const isSelected = isSelectedFire(fire);
     const card = document.createElement('div');
-    card.className = 'card fire';
+    card.className = `card fire${isSelected ? ' selected-fire' : ''}`;
     card.innerHTML = `
       <div class="card-title">
         ${fire.name}
@@ -293,6 +300,15 @@ function renderFireCards(list, stats, perimeters) {
     card.addEventListener('click', () => selectFire(fire));
     list.appendChild(card);
   });
+}
+
+function isSelectedFire(fire) {
+  if (!selectedFire || !fire) return false;
+  if (selectedFire.id && fire.id) return selectedFire.id === fire.id;
+
+  return selectedFire.name === fire.name &&
+    selectedFire.lat === fire.lat &&
+    selectedFire.lon === fire.lon;
 }
 
 function formatAcres(acres) {

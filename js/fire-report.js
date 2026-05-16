@@ -1,8 +1,8 @@
 /* fire-report.js
- * Adds a collapsible "Report a Fire" panel to the top-right of the Leaflet map.
+ * Adds a collapsible local fire-note panel to the top-right of the Leaflet map.
  * Depends on: Leaflet (L) being available globally, and the map instance
  * being stored as window.map (set window.map = L.map(...) in map.js).
- * Reports are saved to localStorage under the key "fireReports".
+ * Notes are saved to localStorage under the key "fireReports".
  */
 
 (function () {
@@ -164,12 +164,12 @@
 
   /* ── HTML template ───────────────────────────────────────────────────── */
   const PANEL_HTML = `
-    <button class="fr-toggle" id="fr-toggle-btn" title="Report a fire">
+    <button class="fr-toggle" id="fr-toggle-btn" title="Save a local fire note">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2c0 6-6 8-6 14a6 6 0 0012 0c0-6-6-8-6-14z"/>
         <path d="M12 12c0 3-2 4-2 6a2 2 0 004 0c0-2-2-3-2-6z"/>
       </svg>
-      Report a Fire
+      Add Fire Note
     </button>
 
     <div class="fr-panel" id="fr-panel">
@@ -179,7 +179,7 @@
             <path d="M12 2c0 6-6 8-6 14a6 6 0 0012 0c0-6-6-8-6-14z"/>
             <path d="M12 12c0 3-2 4-2 6a2 2 0 004 0c0-2-2-3-2-6z"/>
           </svg>
-          Report a Fire Incident
+          Add Local Fire Note
         </div>
         <button class="fr-close" id="fr-close-btn" title="Close">&#x2715;</button>
       </div>
@@ -231,8 +231,9 @@
           <textarea class="fr-input" id="fr-notes" rows="2" placeholder="Size, spread, nearby hazards…" style="resize:vertical;"></textarea>
         </div>
 
-        <button class="fr-submit" id="fr-submit">Submit Report</button>
+        <button class="fr-submit" id="fr-submit">Save Local Note</button>
         <div class="fr-toast" id="fr-toast"></div>
+        <div class="fr-count">Local notes stay in this browser. Call 911 for emergencies.</div>
         <div class="fr-count" id="fr-count"></div>
       </div>
     </div>
@@ -342,7 +343,7 @@
       document.querySelectorAll('.fr-sev-btn').forEach(b => b.className = 'fr-sev-btn');
       document.getElementById('fr-sev-high').classList.add('active-high');
 
-      showToast(`Saved! ${all.length} report${all.length !== 1 ? 's' : ''} total.`, true);
+      showToast(`Saved locally. ${all.length} note${all.length !== 1 ? 's' : ''} in this browser.`, true);
       updateCount(all.length);
     });
 
@@ -367,7 +368,7 @@
     }).addTo(window.map);
 
     marker.bindPopup(`
-      <b>🔥 ${r.address}</b><br>
+      <b>Local fire note: ${r.address}</b><br>
       Severity: <b>${r.severity}</b><br>
       ${r.type ? 'Type: ' + r.type + '<br>' : ''}
       ${r.notes ? '<i>' + r.notes + '</i><br>' : ''}
@@ -384,7 +385,7 @@
 
   function updateCount(n) {
     const el = document.getElementById('fr-count');
-    if (el) el.textContent = n + ' report' + (n !== 1 ? 's' : '') + ' saved in this browser';
+    if (el) el.textContent = n + ' local note' + (n !== 1 ? 's' : '') + ' saved in this browser';
   }
 
   /* ── Boot ────────────────────────────────────────────────────────────── */
