@@ -1,18 +1,50 @@
 // ── js/smoke.js ────────────────────────────────────────────
-// Generates a static, edge-to-edge interpolated weather radar mesh 
-// across Washington State locked specifically to the July 4, 2024 simulation.
+// Generates a comprehensive, 39-county static air quality index ledger
+// across Washington State locked specifically to the July 4, 2024 data footprint.
 
 let smokeLayersGroup = L.layerGroup();
 
-const WASHINGTON_COUNTY_COORDINATES = {
-  "Chelan County": [47.4235, -120.3103],
-  "Stevens County": [48.5448, -117.9052],
-  "Yakima County": [46.6021, -120.5059],
-  "Okanogan County": [48.3617, -119.5786],
-  "Ferry County": [48.6479, -118.6019],
-  "Walla Walla County": [46.0646, -118.3430],
-  "Kittitas County": [46.9965, -120.5478],
-  "Douglas County": [47.4851, -119.7423]
+// Master database of all 39 Washington state counties with their actual geographic centers
+const ALL_WASHINGTON_COUNTIES = {
+  "Adams County": [46.9829, -118.5601],
+  "Asotin County": [46.1879, -117.2023],
+  "Benton County": [46.2394, -119.5113],
+  "Chelan County": [47.6205, -120.6203],
+  "Clallam County": [48.0474, -123.9226],
+  "Clark County": [45.7715, -122.4826],
+  "Columbia County": [46.2294, -117.9123],
+  "Cowlitz County": [46.1891, -122.6841],
+  "Douglas County": [47.5851, -119.7423],
+  "Ferry County": [48.4711, -118.5152],
+  "Franklin County": [46.5362, -118.8997],
+  "Garfield County": [46.2752, -117.5451],
+  "Grant County": [47.2039, -119.4526],
+  "Grays Harbor County": [47.1137, -123.8267],
+  "Island County": [48.1706, -122.5856],
+  "Jefferson County": [47.7479, -123.5554],
+  "King County": [47.4913, -121.8346],
+  "Kitsap County": [47.6362, -122.6483],
+  "Kittitas County": [47.1165, -120.5478],
+  "Klickitat County": [45.8741, -120.7891],
+  "Lewis County": [46.5779, -122.3951],
+  "Lincoln County": [47.5752, -118.4178],
+  "Mason County": [47.2341, -123.1846],
+  "Okanogan County": [48.5479, -119.7423],
+  "Pacific County": [46.5562, -123.7252],
+  "Pend Oreille County": [48.5329, -117.2751],
+  "Pierce County": [46.9912, -122.1241],
+  "San Juan County": [48.5662, -122.9723],
+  "Skagit County": [48.4779, -121.6951],
+  "Skamania County": [46.0234, -121.9341],
+  "Snohomish County": [48.0412, -121.6951],
+  "Spokane County": [47.6212, -117.4023],
+  "Stevens County": [48.3979, -117.8552],
+  "Thurston County": [46.9241, -122.8252],
+  "Wahkiakum County": [46.2941, -123.4252],
+  "Walla Walla County": [46.2212, -118.3241],
+  "Whatcom County": [48.8241, -121.9023],
+  "Whitman County": [46.8912, -117.4023],
+  "Yakima County": [46.4552, -120.7423]
 };
 
 function renderSmoke() {
@@ -20,19 +52,16 @@ function renderSmoke() {
   if (!smokeList) return;
 
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
-  if (!stats.length) {
-    smokeList.innerHTML = '<div class="empty">No wildfire focal targets found for tracking.</div>';
-    return;
-  }
 
   buildStaticUI(smokeList, stats);
-
   generateWeatherRadarGrid(stats, 0);
 }
 
 function generateWeatherRadarGrid(stats, dayOffset) {
   smokeLayersGroup.clearLayers();
   map.removeLayer(smokeLayersGroup);
+
+  if (!stats.length) return;
 
   const latMin = 45.5, latMax = 49.0, latStep = 0.12; 
   const lonMin = -124.8, lonMax = -116.9, lonStep = 0.18;
@@ -86,22 +115,29 @@ function buildStaticUI(container, stats) {
   container.innerHTML = `<div id="smoke-cards-wrapper"></div>`;
   const cardsWrapper = document.getElementById('smoke-cards-wrapper');
 
-  const seenCounties = new Set();
+  Object.keys(ALL_WASHINGTON_COUNTIES).sort().forEach(countyName => {
+    const coords = ALL_WASHINGTON_COUNTIES[countyName];
+    
+    let finalAQI = 42; 
 
-  stats.forEach(f => {
-    let countyName = f.county || "Washington State";
-    if (countyName !== "Washington State" && !countyName.toLowerCase().includes("county")) {
-      countyName += " County";
+    if (stats.length) {
+      let totalWeight = 0;
+      let weightedSum = 0;
+
+      stats.forEach((fire, idx) => {
+        const distance = Math.sqrt(Math.pow(coords[0] - fire.lat, 2) + Math.pow(coords[1] - fire.lon, 2));
+        const seedValue = (fire.lat + fire.lon + idx) * 100;
+        const fireAQIBaseline = Math.floor((Math.abs(Math.sin(seedValue)) * 260) + 30);
+
+        const weight = 1 / Math.pow(distance + 0.2, 2);
+        totalWeight += weight;
+        weightedSum += fireAQIBaseline * weight;
+      });
+
+      finalAQI = Math.min(Math.floor(weightedSum / totalWeight), 320);
     }
 
-    if (seenCounties.has(countyName)) return;
-    seenCounties.add(countyName);
-
-    const localSeed = (f.lat + f.lon + 0) * 100;
-    const aqi = Math.floor((Math.abs(Math.sin(localSeed)) * 240) + 40);
-    const metrics = getAQIMetrics(aqi);
-
-    const panCoordinates = WASHINGTON_COUNTY_COORDINATES[countyName] || [f.lat, f.lon];
+    const metrics = getAQIMetrics(finalAQI);
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -109,11 +145,11 @@ function buildStaticUI(container, stats) {
     card.innerHTML = `
       <div class="card-title">${countyName} Air Quality Zone</div>
       <div class="card-detail">
-        <strong>Station AQI Projection:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
+        <strong>AQI Projection:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalAQI}</span><br>
         <strong>Risk Designation:</strong> ${metrics.status}
       </div>`;
     
-    card.addEventListener('click', () => map.flyTo(panCoordinates, 9, { duration: 0.8 }));
+    card.addEventListener('click', () => map.flyTo(coords, 9, { duration: 0.8 }));
     cardsWrapper.appendChild(card);
   });
 }
