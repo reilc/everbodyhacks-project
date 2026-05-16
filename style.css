@@ -211,37 +211,65 @@ body {
   color: #6b7280 !important;
 }
 
-.smoke-legend {
-  background: rgba(255, 255, 255, 0.94);
+.map-legend {
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 4px 14px rgba(31, 41, 51, 0.14);
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.2;
   margin-right: 10px;
-  min-width: 150px;
-  padding: 10px 12px;
+  margin-top: 64px;
+  min-width: 176px;
+  padding: 12px 14px;
 }
 
-.smoke-legend-title {
+.map-legend-title {
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-.smoke-legend-item {
+.map-legend-item {
   align-items: center;
   display: flex;
-  gap: 8px;
-  margin: 6px 0;
+  gap: 10px;
+  margin: 9px 0;
   white-space: nowrap;
 }
 
-.smoke-legend-swatch {
+.map-legend-symbol {
+  box-sizing: border-box;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 3px;
+  border-radius: 50%;
   display: inline-block;
-  height: 12px;
-  width: 12px;
+  flex: 0 0 14px;
+  height: 14px;
+  min-width: 14px;
+  width: 14px;
+}
+
+.wildfire-symbol {
+  background: #ff3333;
+  border-color: #ff3333;
+  box-shadow: 0 0 0 5px rgba(255, 51, 51, 0.18);
+}
+
+.selected-wildfire-symbol {
+  background: #ff9d2e;
+  border-color: #ff9d2e;
+  box-shadow: 0 0 0 5px rgba(255, 157, 46, 0.22);
+}
+
+.resource-symbol {
+  background: #1f8f55;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(31, 41, 51, 0.24);
+}
+
+.city-symbol {
+  background: #ffffff;
+  border: 3px solid #1f8f55;
 }
 
 .leaflet-popup-content-wrapper {
