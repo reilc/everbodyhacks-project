@@ -1,6 +1,5 @@
 // ── js/smoke.js ────────────────────────────────────────────
-// Generates a static, edge-to-edge interpolated weather radar mesh 
-// across Washington State locked specifically to the July 4, 2024 simulation.
+// Generates a static, edge-to-edge interpolated weather radar mesh across Washington State.
 
 let smokeLayersGroup = L.layerGroup();
 let mapLegendControl = null;
@@ -30,33 +29,7 @@ function updateMapLegendContent() {
 
   const activeTab = document.querySelector('.tab.active')?.dataset.tab;
   mapLegendEl.innerHTML = activeTab === 'smoke'
-    ? `
-      <div class="map-legend-title">Smoke Legend</div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol smoke-risk-symbol" style="background:#f2c94c"></span>
-        <span>Low smoke</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol smoke-risk-symbol" style="background:#f6ad55"></span>
-        <span>Moderate smoke</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol smoke-risk-symbol" style="background:#fcae91"></span>
-        <span>Elevated risk</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol smoke-risk-symbol" style="background:#fb6a4a"></span>
-        <span>Unhealthy</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol smoke-risk-symbol" style="background:#de2d26"></span>
-        <span>Very unhealthy</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol smoke-risk-symbol" style="background:#a50f15"></span>
-        <span>Hazardous</span>
-      </div>
-    `
+    ? buildSmokeLegendHtml()
     : `
       <div class="map-legend-title">Map Legend</div>
       <div class="map-legend-item">
@@ -78,6 +51,18 @@ function updateMapLegendContent() {
     `;
 }
 
+function buildSmokeLegendHtml() {
+  const labels = ['Low smoke', 'Moderate smoke', 'Elevated risk', 'Unhealthy', 'Very unhealthy', 'Hazardous'];
+  const items = EPA_BREAKPOINTS.map((breakpoint, index) => `
+    <div class="map-legend-item">
+      <span class="map-legend-symbol smoke-risk-symbol" style="background:${breakpoint.color}"></span>
+      <span>${labels[index] || breakpoint.status}</span>
+    </div>
+  `).join('');
+
+  return `<div class="map-legend-title">Smoke Legend</div>${items}`;
+}
+
 function hideMapLegend() {
   if (mapLegendControl) map.removeControl(mapLegendControl);
 }
@@ -88,15 +73,6 @@ const hideSmokeLegend = hideMapLegend;
 function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
-
-  const today = new Date();
-  const options = { month: 'long', day: 'numeric', year: 'numeric' };
-  const formattedDate = today.toLocaleDateString('en-US', options);
-
-  const statusTextEl = document.getElementById('smoke-status-text');
-  if (statusTextEl) {
-    statusTextEl.innerText = `Smoke index for ${formattedDate}`;
-  }
 
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   if (!stats.length) {
@@ -149,7 +125,7 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       });
 
       gridCell.bindPopup(`
-        <div class="popup-title">:Smoke Risk Cell</div>
+        <div class="popup-title">Smoke Risk Cell</div>
         <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
         <div class="popup-row"><strong>Modeled Risk Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);

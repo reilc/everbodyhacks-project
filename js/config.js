@@ -5,8 +5,8 @@ const SHELTER_SEARCH_RADIUS_MILES = 90;
 const INCIDENT_RESOURCE_RADIUS_MILES = 85;
 const CITY_FIRE_RADIUS_MILES = 90;
 const WA_ENVELOPE = '-124.95,45.45,-116.85,49.05';
-const SIMULATION_FIRE_DATE = '2024-07-04';
-const SIMULATION_FIRE_DATE_LABEL = 'July 4, 2024';
+const INCIDENT_DATE = '2024-07-04';
+const INCIDENT_DATE_LABEL = 'July 4, 2024';
 const DNR_FIRE_STATS_2024_URL = 'https://gis.dnr.wa.gov/site3/rest/services/Public_Wildfire/WADNR_PUBLIC_WD_WildFire_Data/MapServer/2/query';
 const FIRE_PERIMETER_2024_URL = 'https://services1.arcgis.com/CD5mKowwN6nIaqd8/arcgis/rest/services/project_landscape_planning_tool_fire_perimeter_history/FeatureServer/0/query';
 
