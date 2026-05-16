@@ -491,9 +491,7 @@
       function filteredPlaces() {
         const query = input.value.trim().toLowerCase();
         if (!query) return [];
-        return places.filter((place) =>
-          `${place.name} ${place.note}`.toLowerCase().includes(query),
-        );
+        return places.filter((place) => place.name.toLowerCase().startsWith(query));
       }
 
       function renderResults() {
