@@ -1,12 +1,12 @@
 // wildfires.js
-// Loads WA DNR 2024 fire-statistic points statewide plus mapped 2024 fire perimeters.
+// Loads the busiest WA DNR 2024 fire day as a live-style simulation plus mapped perimeters.
 
 async function loadWildfires() {
   const dot = document.getElementById('fire-dot');
   const status = document.getElementById('fire-status');
 
   dot.className = 'status-dot loading';
-  status.textContent = 'Loading WA DNR 2024 wildfire records...';
+  status.textContent = `Loading ${SIMULATION_FIRE_DATE_LABEL} fire simulation...`;
 
   try {
     const [stats, perimeters] = await Promise.all([
@@ -17,7 +17,7 @@ async function loadWildfires() {
     allFires = { stats, perimeters };
 
     dot.className = 'status-dot ok';
-    status.textContent = `${stats.length.toLocaleString()} WA DNR 2024 fire records + ${perimeters.length} mapped perimeters`;
+    status.textContent = `Live simulation: ${stats.length} fire records on ${SIMULATION_FIRE_DATE_LABEL}`;
   } catch (err) {
     console.error('2024 wildfire data error:', err);
     dot.className = 'status-dot err';
@@ -30,7 +30,7 @@ async function loadWildfires() {
 
 async function loadDnrFireStats() {
   const params = new URLSearchParams({
-    where: "DSCVR_DT >= DATE '2024-01-01' AND DSCVR_DT < DATE '2025-01-01'",
+    where: `DSCVR_DT >= DATE '${SIMULATION_FIRE_DATE}' AND DSCVR_DT < DATE '2024-07-05'`,
     outFields: 'OBJECTID,INCIDENT_NM,COUNTY_LABEL_NM,FIREGCAUSE_LABEL_NM,ACRES_BURNED,DSCVR_DT,FIREEVNT_CLASS_LABEL_NM,LAT_COORD,LON_COORD,START_OWNER_AGENCY_NM,START_JURISDICTION_AGENCY_NM,PROTECTION_TYPE,REGION_NAME',
     returnGeometry: 'true',
     outSR: '4326',
@@ -195,11 +195,20 @@ function renderPerimeters(perimeters) {
 function renderFirePoints(stats) {
   stats.forEach(fire => {
     const marker = L.circleMarker([fire.lat, fire.lon], {
-      color: '#ff9d42',
-      fillColor: '#ff9d42',
-      fillOpacity: 0.65,
+      color: '#ff3333',
+      fillColor: '#ff3333',
+      fillOpacity: 0.82,
       radius: getFireRadius(fire.acres),
+      weight: 2,
+    }).addTo(map);
+
+    const heatHalo = L.circle([fire.lat, fire.lon], {
+      radius: getFireHaloRadius(fire.acres),
+      color: '#ff3333',
+      fillColor: '#ff3333',
+      fillOpacity: 0.12,
       weight: 1,
+      interactive: false,
     }).addTo(map);
 
     marker.bindPopup(`
@@ -211,7 +220,7 @@ function renderFirePoints(stats) {
       <div class="popup-row"><strong>Source:</strong> WA DNR Fire Statistics</div>
     `);
 
-    fireMarkers.push(marker);
+    fireMarkers.push(heatHalo, marker);
   });
 }
 
@@ -222,9 +231,9 @@ function renderFireCards(list, stats, perimeters) {
 
   list.innerHTML = `
     <div class="empty" style="padding:14px 12px;text-align:left">
-      <strong>${stats.length.toLocaleString()}</strong> WA DNR 2024 fire records are mapped statewide.<br>
-      <strong>${perimeters.length}</strong> mapped perimeter areas are shown in red.<br>
-      The list below shows the largest fire records.
+      <strong>${stats.length}</strong> fire records occurred on ${SIMULATION_FIRE_DATE_LABEL}, the busiest verified 2024 day in WA DNR data.<br>
+      Red halos show the live-style simulation; red polygons show mapped 2024 perimeter context.<br>
+      The list below shows this day's fire records.
     </div>`;
 
   largestStats.forEach(fire => {
@@ -254,9 +263,18 @@ function formatAcres(acres) {
 
 function getFireRadius(acres) {
   if (!Number.isFinite(acres) || acres <= 1) return 3;
-  if (acres < 10) return 4;
-  if (acres < 100) return 5;
-  if (acres < 1000) return 6;
-  if (acres < 10000) return 8;
-  return 10;
+  if (acres < 10) return 5;
+  if (acres < 100) return 7;
+  if (acres < 1000) return 9;
+  if (acres < 10000) return 11;
+  return 13;
+}
+
+function getFireHaloRadius(acres) {
+  if (!Number.isFinite(acres) || acres <= 1) return 8000;
+  if (acres < 10) return 12000;
+  if (acres < 100) return 16000;
+  if (acres < 1000) return 22000;
+  if (acres < 10000) return 30000;
+  return 42000;
 }
