@@ -1,16 +1,15 @@
 // config.js
 // Central API endpoints, shared state, and Washington city search data.
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
-const SHELTER_SEARCH_RADIUS_METERS = 50000;
+const SHELTER_SEARCH_RADIUS_MILES = 90;
 const WA_ENVELOPE = '-124.95,45.45,-116.85,49.05';
+const DNR_FIRE_STATS_2024_URL = 'https://gis.dnr.wa.gov/site3/rest/services/Public_Wildfire/WADNR_PUBLIC_WD_WildFire_Data/MapServer/2/query';
 const FIRE_PERIMETER_2024_URL = 'https://services1.arcgis.com/CD5mKowwN6nIaqd8/arcgis/rest/services/project_landscape_planning_tool_fire_perimeter_history/FeatureServer/0/query';
 
 let allShelters = [];
 let allFires = [];
 let shelterMarkers = [];
 let fireMarkers = [];
-let fireYearFilter = '2024';
 let searchQuery = '';
 let selectedCity = null;
 let selectedCityMarker = null;
@@ -24,6 +23,7 @@ const WASHINGTON_CITIES = [
   { name: 'Bellevue', region: 'King County', lat: 47.6101, lon: -122.2015 },
   { name: 'Bothell', region: 'King/Snohomish County', lat: 47.7623, lon: -122.2054 },
   { name: 'Bremerton', region: 'Kitsap County', lat: 47.5673, lon: -122.6326 },
+  { name: 'Bickleton', region: 'Klickitat County', lat: 46.0096, lon: -120.3062 },
   { name: 'Cashmere', region: 'Chelan County', lat: 47.5223, lon: -120.4698 },
   { name: 'Centralia', region: 'Lewis County', lat: 46.7162, lon: -122.9543 },
   { name: 'Chelan', region: 'Chelan County', lat: 47.8408, lon: -120.0168 },
@@ -42,9 +42,11 @@ const WASHINGTON_CITIES = [
   { name: 'Forks', region: 'Clallam County', lat: 47.9504, lon: -124.3855 },
   { name: 'Goldendale', region: 'Klickitat County', lat: 45.8207, lon: -120.8217 },
   { name: 'Grand Coulee', region: 'Grant County', lat: 47.9390, lon: -119.0033 },
+  { name: 'Harrah', region: 'Yakima County', lat: 46.4043, lon: -120.5420 },
   { name: 'Hoquiam', region: 'Grays Harbor County', lat: 46.9809, lon: -123.8893 },
   { name: 'Issaquah', region: 'King County', lat: 47.5301, lon: -122.0326 },
   { name: 'Kelso', region: 'Cowlitz County', lat: 46.1468, lon: -122.9084 },
+  { name: 'Keller', region: 'Ferry County', lat: 48.0832, lon: -118.7120 },
   { name: 'Kennewick', region: 'Benton County', lat: 46.2087, lon: -119.1190 },
   { name: 'Kent', region: 'King County', lat: 47.3809, lon: -122.2348 },
   { name: 'Kettle Falls', region: 'Stevens County', lat: 48.6107, lon: -118.0558 },
@@ -52,6 +54,7 @@ const WASHINGTON_CITIES = [
   { name: 'Longview', region: 'Cowlitz County', lat: 46.1382, lon: -122.9382 },
   { name: 'Moses Lake', region: 'Grant County', lat: 47.1301, lon: -119.2781 },
   { name: 'Mount Vernon', region: 'Skagit County', lat: 48.4212, lon: -122.3340 },
+  { name: 'Naches', region: 'Yakima County', lat: 46.7307, lon: -120.6995 },
   { name: 'Newport', region: 'Pend Oreille County', lat: 48.1796, lon: -117.0433 },
   { name: 'North Bend', region: 'King County', lat: 47.4957, lon: -121.7868 },
   { name: 'Oak Harbor', region: 'Island County', lat: 48.2932, lon: -122.6432 },
@@ -60,6 +63,7 @@ const WASHINGTON_CITIES = [
   { name: 'Olympia', region: 'Thurston County', lat: 47.0379, lon: -122.9007 },
   { name: 'Omak', region: 'Okanogan County', lat: 48.4107, lon: -119.5276 },
   { name: 'Pasco', region: 'Franklin County', lat: 46.2396, lon: -119.1006 },
+  { name: 'Patterson', region: 'Benton County', lat: 45.9365, lon: -119.6110 },
   { name: 'Pateros', region: 'Okanogan County', lat: 48.0521, lon: -119.9034 },
   { name: 'Port Angeles', region: 'Clallam County', lat: 48.1181, lon: -123.4307 },
   { name: 'Port Townsend', region: 'Jefferson County', lat: 48.1170, lon: -122.7604 },
@@ -75,6 +79,7 @@ const WASHINGTON_CITIES = [
   { name: 'Shelton', region: 'Mason County', lat: 47.2151, lon: -123.1007 },
   { name: 'Snoqualmie', region: 'King County', lat: 47.5287, lon: -121.8254 },
   { name: 'Spokane', region: 'Spokane County', lat: 47.6588, lon: -117.4260 },
+  { name: 'Stehekin', region: 'Chelan County', lat: 48.3090, lon: -120.6565 },
   { name: 'Stevenson', region: 'Skamania County', lat: 45.6957, lon: -121.8845 },
   { name: 'Tacoma', region: 'Pierce County', lat: 47.2529, lon: -122.4443 },
   { name: 'Tonasket', region: 'Okanogan County', lat: 48.7052, lon: -119.4398 },
@@ -84,10 +89,159 @@ const WASHINGTON_CITIES = [
   { name: 'Walla Walla', region: 'Walla Walla County', lat: 46.0646, lon: -118.3430 },
   { name: 'Wenatchee', region: 'Chelan County', lat: 47.4235, lon: -120.3103 },
   { name: 'White Salmon', region: 'Klickitat County', lat: 45.7276, lon: -121.4865 },
+  { name: 'White Swan', region: 'Yakima County', lat: 46.3787, lon: -120.7329 },
   { name: 'Winthrop', region: 'Okanogan County', lat: 48.4779, lon: -120.1862 },
   { name: 'Yakima', region: 'Yakima County', lat: 46.6021, lon: -120.5059 },
   { name: 'Yelm', region: 'Thurston County', lat: 46.9420, lon: -122.6059 },
 ];
+
+const HISTORICAL_2024_SHELTERS = [
+  {
+    name: 'Patterson Elementary School',
+    fire: 'Big Horn Fire',
+    type: 'Red Cross shelter',
+    opened: 'Opened July 2024 in Benton County for individuals and families displaced by the Big Horn Fire',
+    address: '51409 Prior Ave, Patterson, WA 99345',
+    city: 'Patterson',
+    lat: 45.9365,
+    lon: -119.6110,
+    sourceName: 'InciWeb Big Horn Fire update',
+    sourceUrl: 'https://inciweb.wildfire.gov/incident-publication/wases-big-horn-fire/big-horn-fire-pm-update-july-26-2024-07-27-2024',
+  },
+  {
+    name: 'Chelan United Methodist Church',
+    fire: 'Pioneer Fire',
+    type: 'Red Cross shelter',
+    opened: 'Opened during 2024 Pioneer Fire evacuations; closure noted Aug. 19, 2024',
+    address: '206 N Emerson St, Chelan, WA',
+    city: 'Chelan',
+    lat: 47.8408,
+    lon: -120.0190,
+    sourceName: 'InciWeb Pioneer Fire evacuation update',
+    sourceUrl: 'https://inciweb.wildfire.gov/incident-publication/wases-pioneer/pioneer-fire-evacuation-level-updates-08-18-2024',
+  },
+  {
+    name: 'Naches Valley High School',
+    fire: 'Retreat Fire',
+    type: 'Red Cross evacuation center',
+    opened: 'Opened July 2024 for Retreat Fire evacuees',
+    address: '101 W 5th Ave, Naches, WA',
+    city: 'Naches',
+    lat: 46.7307,
+    lon: -120.7048,
+    sourceName: 'Northwest Public Broadcasting / local reports',
+    sourceUrl: 'https://www.nwpb.org/nw-news/2024-07-26/intense-fire-week-forces-road-closures-and-evacuation-notices-in-wa',
+  },
+  {
+    name: 'Harrah Elementary School',
+    fire: 'Slide Ranch Fire',
+    type: 'emergency shelter',
+    opened: 'Opened June 2024 for Slide Ranch Fire evacuees',
+    address: '3851 Harrah Rd, Harrah, WA',
+    city: 'Harrah',
+    lat: 46.4054,
+    lon: -120.5444,
+    sourceName: 'KIT / Newstalk local report',
+    sourceUrl: 'https://newstalkkit.com/fierce-slide-ranch-fire-forces-evacuations-destroys-homes/',
+  },
+  {
+    name: 'White Swan Community Center',
+    fire: 'Slide Ranch Fire',
+    type: 'food and donation resource center',
+    opened: 'Opened June-July 2024 with food, clothing, cleaning supplies, meals, and donations for families who lost homes',
+    address: 'White Swan, WA',
+    city: 'White Swan',
+    lat: 46.3787,
+    lon: -120.7329,
+    sourceName: 'NonStop Local / NBC Right Now',
+    sourceUrl: 'https://www.nbcrightnow.com/news/white-swan-community-receives-overwhelming-support-donations-following-slide-ranch-fire/article_b8a71bee-3835-11ef-bd20-afcafee41056.html',
+  },
+  {
+    name: 'Yakama Nation Boys and Girls Club',
+    fire: 'Slide Ranch Fire',
+    type: 'family support resource',
+    opened: 'Welcomed children of families affected by the Slide Ranch Fire from 8 a.m. to 5 p.m.',
+    address: 'White Swan / Yakama Nation area, WA',
+    city: 'White Swan',
+    lat: 46.3787,
+    lon: -120.7329,
+    sourceName: 'NonStop Local / NBC Right Now',
+    sourceUrl: 'https://www.nbcrightnow.com/news/slide-ranch-victims-move-forward-with-support-from-white-swan-community/article_f3f5574e-90ee-11ef-a931-b39427c75cc3.html',
+  },
+  {
+    name: 'Yakama Nation Department of Revenue',
+    fire: 'Slide Ranch Fire',
+    type: 'financial donation resource',
+    opened: 'Accepted monetary donations for families affected by the Slide Ranch Fire',
+    address: '401 Fort Rd, Toppenish, WA',
+    city: 'Toppenish',
+    lat: 46.3774,
+    lon: -120.3087,
+    sourceName: 'Yakama Nation fire response release',
+    sourceUrl: 'https://www.yakama.com/wp-content/uploads/2024/06/Fire-response-June-2024.pdf',
+  },
+  {
+    name: 'Lake Roosevelt High School Gym',
+    fire: 'Swawilla Fire',
+    type: 'evacuation center',
+    opened: 'Opened July 2024 for Swawilla Fire evacuees',
+    address: '505 Crest Dr, Coulee Dam, WA',
+    city: 'Coulee Dam',
+    lat: 47.9666,
+    lon: -118.9889,
+    sourceName: 'InciWeb Swawilla daily update',
+    sourceUrl: 'https://inciweb.wildfire.gov/node/318681',
+  },
+  {
+    name: 'Paschal Sherman Indian School',
+    fire: 'Swawilla Fire',
+    type: 'evacuation center',
+    opened: 'Opened July 2024 for Swawilla Fire evacuees',
+    address: '169 North End Omak Lake Rd, Omak, WA',
+    city: 'Omak',
+    lat: 48.4388,
+    lon: -119.5270,
+    sourceName: 'Swawilla Fire incident summary',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Swawilla_Fire',
+  },
+  {
+    name: 'Republic Fairgrounds',
+    fire: 'Swawilla Fire',
+    type: 'evacuation center',
+    opened: 'Opened July 2024 as Swawilla Fire evacuation needs shifted',
+    address: 'Republic, WA',
+    city: 'Republic',
+    lat: 48.6482,
+    lon: -118.7378,
+    sourceName: 'Swawilla Fire incident summary',
+    sourceUrl: 'https://en.wikipedia.org/wiki/Swawilla_Fire',
+  },
+  {
+    name: 'Columbia High School',
+    fire: 'Williams Mine Fire',
+    type: 'Red Cross shelter',
+    opened: 'Opened August 2024 for people displaced by the Williams Mine Fire',
+    address: '1455 NW Bruin Country Rd, White Salmon, WA',
+    city: 'White Salmon',
+    lat: 45.7340,
+    lon: -121.5044,
+    sourceName: 'Columbia Basin Herald / fire report',
+    sourceUrl: 'https://www.aol.com/fire-report-williams-mine-fire-195300294.html',
+  },
+  {
+    name: 'Cheney High School',
+    fire: 'Columbia Basin Fire',
+    type: 'Red Cross evacuation center',
+    opened: 'Opened July 2024 for Columbia Basin Fire evacuees near Tyler',
+    address: '460 N 6th St, Cheney, WA',
+    city: 'Cheney',
+    lat: 47.4939,
+    lon: -117.5747,
+    sourceName: 'The Spokesman-Review',
+    sourceUrl: 'https://www.spokesman.com/stories/2024/jul/26/fire-near-tyler-prompts-evacuations/',
+  },
+];
+
 
 function matchingCities() {
   const q = searchQuery.trim().toLowerCase();
