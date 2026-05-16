@@ -1,10 +1,11 @@
-// ── js/smoke.js ────────────────────────────────────────────
-// Generates a comprehensive, 39-county static air quality index ledger
-// across Washington State locked specifically to the July 4, 2024 data footprint.
+// smoke.js
+// Generates a comprehensive county-level air quality index ledger across Washington State.
 
 let smokeLayersGroup = L.layerGroup();
+let mapLegendControl = null;
+let mapLegendEl = null;
+let visibleSmokeBreakpoints = new Set();
 
-// Master database of all 39 Washington state counties with their actual geographic centers
 const ALL_WASHINGTON_COUNTIES = {
   "Adams County": [46.9829, -118.5601],
   "Asotin County": [46.1879, -117.2023],
@@ -44,16 +45,86 @@ const ALL_WASHINGTON_COUNTIES = {
   "Walla Walla County": [46.2212, -118.3241],
   "Whatcom County": [48.8241, -121.9023],
   "Whitman County": [46.8912, -117.4023],
-  "Yakima County": [46.4552, -120.7423]
+  "Yakima County": [46.4552, -120.7423],
 };
+
+function showMapLegend() {
+  if (mapLegendControl) {
+    mapLegendControl.addTo(map);
+    updateMapLegendContent();
+    return;
+  }
+
+  mapLegendControl = L.control({ position: 'topright' });
+  mapLegendControl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'map-legend');
+    mapLegendEl = div;
+    updateMapLegendContent();
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+    return div;
+  };
+  mapLegendControl.addTo(map);
+}
+
+function updateMapLegendContent() {
+  if (!mapLegendEl) return;
+
+  const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+  mapLegendEl.innerHTML = activeTab === 'smoke'
+    ? buildSmokeLegendHtml()
+    : `
+      <div class="map-legend-title">Map Legend</div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol wildfire-symbol"></span>
+        <span>Wildfire</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol selected-wildfire-symbol"></span>
+        <span>Wildfire selected</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol resource-symbol"></span>
+        <span>Resource</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol city-symbol"></span>
+        <span>City searched</span>
+      </div>
+    `;
+}
+
+function buildSmokeLegendHtml() {
+  const labels = ['Low smoke', 'Moderate smoke', 'Elevated risk', 'Unhealthy', 'Very unhealthy', 'Hazardous'];
+  const items = EPA_BREAKPOINTS.map((breakpoint, index) => `
+    <div class="map-legend-item">
+      <span class="map-legend-symbol smoke-risk-symbol" style="background:${breakpoint.color}"></span>
+      <span>${labels[index] || breakpoint.status}</span>
+    </div>
+  `).join('');
+
+  return `<div class="map-legend-title">Smoke Legend</div>${items}`;
+}
+
+function hideMapLegend() {
+  if (mapLegendControl) map.removeControl(mapLegendControl);
+}
+
+const showSmokeLegend = showMapLegend;
+const hideSmokeLegend = hideMapLegend;
 
 function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
 
-  const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
+  const statusTextEl = document.getElementById('smoke-status-text');
+  if (statusTextEl) {
+    statusTextEl.innerText = `Smoke index for ${INCIDENT_DATE_LABEL}`;
+  }
 
+  const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   buildStaticUI(smokeList, stats);
+  updateMapLegendContent();
   generateWeatherRadarGrid(stats, 0);
 }
 
@@ -63,12 +134,11 @@ function generateWeatherRadarGrid(stats, dayOffset) {
 
   if (!stats.length) return;
 
-  const latMin = 45.5, latMax = 49.0, latStep = 0.12; 
+  const latMin = 45.5, latMax = 49.0, latStep = 0.12;
   const lonMin = -124.8, lonMax = -116.9, lonStep = 0.18;
 
   for (let lat = latMin; lat <= latMax; lat += latStep) {
     for (let lon = lonMin; lon <= lonMax; lon += lonStep) {
-      
       let totalWeight = 0;
       let interpolatedAQI = 0;
 
@@ -76,8 +146,8 @@ function generateWeatherRadarGrid(stats, dayOffset) {
         const distance = Math.sqrt(Math.pow(lat - fire.lat, 2) + Math.pow(lon - fire.lon, 2));
         const seedValue = (fire.lat + fire.lon + idx + dayOffset) * 100;
         const fireAQIBaseline = Math.floor((Math.abs(Math.sin(seedValue)) * 260) + 30);
-        
-        const weight = 1 / Math.pow(distance + 0.15, 2); 
+        const weight = 1 / Math.pow(distance + 0.15, 2);
+
         totalWeight += weight;
         interpolatedAQI += fireAQIBaseline * weight;
       });
@@ -85,19 +155,19 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       const finalGridAQI = Math.min(Math.floor(interpolatedAQI / totalWeight), 350);
       const metrics = getAQIMetrics(finalGridAQI);
 
-      if (finalGridAQI < 35) continue; 
+      if (finalGridAQI < 35) continue;
 
       const bounds = [[lat, lon], [lat + latStep, lon + lonStep]];
       const gridCell = L.rectangle(bounds, {
         color: 'transparent',
         fillColor: metrics.color,
         fillOpacity: metrics.fillOpacity * 0.42,
-        interactive: true
+        interactive: true,
       });
 
       gridCell.bindPopup(`
         <div class="popup-title">Regional Air Quality Canvas</div>
-        <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
+        <div class="popup-row"><strong>Observation Window:</strong> ${INCIDENT_DATE_LABEL}</div>
         <div class="popup-row"><strong>Grid Air Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);
 
@@ -108,17 +178,18 @@ function generateWeatherRadarGrid(stats, dayOffset) {
   const activeTab = document.querySelector('.tab.active');
   if (activeTab && activeTab.dataset.tab === 'smoke') {
     smokeLayersGroup.addTo(map);
+    updateMapLegendContent();
   }
 }
 
 function buildStaticUI(container, stats) {
+  visibleSmokeBreakpoints = new Set();
   container.innerHTML = `<div id="smoke-cards-wrapper"></div>`;
   const cardsWrapper = document.getElementById('smoke-cards-wrapper');
 
   Object.keys(ALL_WASHINGTON_COUNTIES).sort().forEach(countyName => {
     const coords = ALL_WASHINGTON_COUNTIES[countyName];
-    
-    let finalAQI = 42; 
+    let finalAQI = 42;
 
     if (stats.length) {
       let totalWeight = 0;
@@ -128,8 +199,8 @@ function buildStaticUI(container, stats) {
         const distance = Math.sqrt(Math.pow(coords[0] - fire.lat, 2) + Math.pow(coords[1] - fire.lon, 2));
         const seedValue = (fire.lat + fire.lon + idx) * 100;
         const fireAQIBaseline = Math.floor((Math.abs(Math.sin(seedValue)) * 260) + 30);
-
         const weight = 1 / Math.pow(distance + 0.2, 2);
+
         totalWeight += weight;
         weightedSum += fireAQIBaseline * weight;
       });
@@ -138,6 +209,7 @@ function buildStaticUI(container, stats) {
     }
 
     const metrics = getAQIMetrics(finalAQI);
+    visibleSmokeBreakpoints.add(metrics.class);
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -148,7 +220,7 @@ function buildStaticUI(container, stats) {
         <strong>AQI Projection:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalAQI}</span><br>
         <strong>Risk Designation:</strong> ${metrics.status}
       </div>`;
-    
+
     card.addEventListener('click', () => map.flyTo(coords, 9, { duration: 0.8 }));
     cardsWrapper.appendChild(card);
   });
