@@ -11,7 +11,7 @@ function renderSmoke() {
 
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   if (!stats.length) {
-    smokeList.innerHTML = '<div class="empty">No wildfire focal targets found for tracking.</div>';
+    smokeList.innerHTML = '<div class="empty">No July 4 fire records found for smoke simulation.</div>';
     return;
   }
 
@@ -69,9 +69,9 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       });
 
       gridCell.bindPopup(`
-        <div class="popup-title">Regional Air Quality Canvas</div>
+        <div class="popup-title">Simulated Smoke Risk Cell</div>
         <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
-        <div class="popup-row"><strong>Grid Air Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
+        <div class="popup-row"><strong>Modeled Risk Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);
 
       smokeLayersGroup.addLayer(gridCell);
@@ -103,7 +103,7 @@ function buildStaticUI(container, stats) {
     card.innerHTML = `
       <div class="card-title">${f.name} Sector</div>
       <div class="card-detail">
-        <strong>Station AQI Projection:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
+        <strong>Modeled Smoke Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
         <strong>Risk Designation:</strong> ${metrics.status}
       </div>`;
     card.addEventListener('click', () => map.flyTo([f.lat, f.lon], 10, { duration: 0.8 }));

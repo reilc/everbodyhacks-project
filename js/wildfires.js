@@ -17,7 +17,7 @@ async function loadWildfires() {
     allFires = { stats, perimeters };
 
     dot.className = 'status-dot ok';
-    status.textContent = `Live simulation: ${stats.length} fire records on ${SIMULATION_FIRE_DATE_LABEL}`;
+    status.textContent = `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
   } catch (err) {
     console.error('2024 wildfire data error:', err);
     dot.className = 'status-dot err';
@@ -187,8 +187,8 @@ function updateFireStatus(stats, perimeters) {
   if (!status) return;
 
   status.textContent = selectedCity
-    ? `${stats.length} nearby fire records within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}`
-    : `Live simulation: ${stats.length} fire records on ${SIMULATION_FIRE_DATE_LABEL}`;
+    ? `${stats.length} ${SIMULATION_FIRE_DATE_LABEL} fire records within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}`
+    : `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
 }
 
 function renderPerimeters(perimeters) {
@@ -271,8 +271,8 @@ function renderFireCards(list, stats, perimeters) {
 
   list.innerHTML = `
     <div class="empty" style="padding:14px 12px;text-align:left">
-      <strong>${stats.length}</strong> ${selectedCity ? `nearby fires within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}` : 'current fires in Washington'}.
-      ${perimeters.length ? `<br><strong>${perimeters.length}</strong> mapped perimeter context layer${perimeters.length === 1 ? '' : 's'} nearby.` : ''}
+      <strong>${stats.length}</strong> ${selectedCity ? `${SIMULATION_FIRE_DATE_LABEL} fire records within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}` : `${SIMULATION_FIRE_DATE_LABEL} WA DNR fire records in Washington`}.
+      ${perimeters.length ? `<br><strong>${perimeters.length}</strong> 2024 mapped perimeter context layer${perimeters.length === 1 ? '' : 's'} nearby.` : ''}
     </div>`;
 
   largestStats.forEach(fire => {

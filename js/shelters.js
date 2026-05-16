@@ -84,7 +84,7 @@ function loadResourcesForCity(city) {
         .sort((a, b) => a.distance - b.distance)]
         .slice(0, 12);
 
-  setShelterStatus('ok', `${allShelters.length} food/shelter resources near ${city.name}`);
+  setShelterStatus('ok', `Showing ${allShelters.length} nearest July 4 resources for ${city.name}`);
   renderShelters();
 }
 
@@ -129,7 +129,7 @@ function loadResourcesForFire(fire) {
         .sort((a, b) => a.distance - b.distance)]
         .slice(0, 10);
 
-  setShelterStatus('ok', `${allShelters.length} food/shelter resources near ${fire.name || 'selected fire'}`);
+  setShelterStatus('ok', `Showing ${allShelters.length} nearest July 4 resources for ${fire.name || 'selected fire'}`);
   renderShelters();
 }
 
@@ -158,8 +158,8 @@ function renderShelters() {
       ...HISTORICAL_2024_SHELTERS,
       ...COMMUNITY_RESOURCE_SITES,
     ].filter(wasActiveOnSimulationDate).length;
-    setShelterStatus('ok', `${activeCount} confirmed resources active on ${SIMULATION_FIRE_DATE_LABEL}`);
-    list.innerHTML = `<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed food banks, resource centers, and documented shelters for ${SIMULATION_FIRE_DATE_LABEL}.</div>`;
+    setShelterStatus('ok', `${activeCount} resources included for the ${SIMULATION_FIRE_DATE_LABEL} simulation`);
+    list.innerHTML = `<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed food banks, resource centers, and documented wildfire shelters for the ${SIMULATION_FIRE_DATE_LABEL} simulation.</div>`;
     return;
   }
 
@@ -172,7 +172,7 @@ function renderShelters() {
   }
 
   if (!allShelters.length) {
-    list.innerHTML = `<div class="empty"><div class="icon">Resources</div>No confirmed food/shelter resources active on ${SIMULATION_FIRE_DATE_LABEL} found within ${SHELTER_SEARCH_RADIUS_MILES} miles of ${selectedCity.name}.</div>`;
+    list.innerHTML = `<div class="empty"><div class="icon">Resources</div>No confirmed food/shelter resources for the ${SIMULATION_FIRE_DATE_LABEL} simulation found within ${SHELTER_SEARCH_RADIUS_MILES} miles of ${selectedCity.name}.</div>`;
     return;
   }
 
@@ -187,12 +187,12 @@ function renderResourceCards(list) {
 
     list.innerHTML = selectedFire
     ? `<div class="empty" style="padding:14px 12px;text-align:left">
-        <strong>${allShelters.length}</strong> nearby food/shelter resources for ${selectedFire.name || 'selected fire'}<br>
-        Official wildfire shelters appear first when documented. Food banks and resource centers are included for practical support; verify real-time availability with WA 211.
+        Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedFire.name || 'selected fire'}<br>
+        Documented wildfire shelters appear first when active on July 4. Food banks and resource centers use 2024 service evidence; verify real-time availability with WA 211.
       </div>`
     : selectedCity
       ? `<div class="empty" style="padding:14px 12px;text-align:left">
-          <strong>${allShelters.length}</strong> nearby food/shelter resources for ${selectedCity.name}<br>
+          Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedCity.name}<br>
           These are confirmed 2024 providers, not a promise of open beds. Call ahead or use WA 211 for real-time availability.
         </div>`
     : '';
@@ -208,7 +208,7 @@ function renderResourceCards(list) {
       <div class="card-detail">
         <strong>Context:</strong> ${shelter.fire || 'Food / basic needs resource'}<br>
         <strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi<br>
-        <strong>Active window:</strong> ${formatActiveWindow(shelter)}<br>
+        <strong>Date evidence:</strong> ${formatDateEvidence(shelter)}<br>
         <strong>Availability evidence:</strong> ${shelter.opened}<br>
         <strong>Address:</strong> ${shelter.address}<br>
         ${shelter.dataset ? `<strong>Dataset:</strong> ${shelter.dataset}<br>` : ''}
@@ -238,8 +238,12 @@ function renderResourceCards(list) {
   });
 }
 
-function formatActiveWindow(shelter) {
-  return `${formatShortDate(shelter.activeStart)} - ${formatShortDate(shelter.activeEnd)}`;
+function formatDateEvidence(shelter) {
+  if (shelter.dataset === 'Verified wildfire response') {
+    return `Documented ${formatShortDate(shelter.activeStart)} - ${formatShortDate(shelter.activeEnd)}`;
+  }
+
+  return `${formatShortDate(shelter.activeStart)} - ${formatShortDate(shelter.activeEnd)} 2024 service evidence`;
 }
 
 function formatShortDate(value) {
