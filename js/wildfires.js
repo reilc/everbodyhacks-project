@@ -261,7 +261,7 @@ function buildReportSection() {
       card.innerHTML = `
         <div class="card-title">
           <span style="width:8px;height:8px;border-radius:50%;background:${colors.dot};flex-shrink:0;display:inline-block;"></span>
-          Community Report
+          ${r.locationName || 'Community Report'}
           <span class="badge" style="background:${colors.bg};color:${colors.text};border:1px solid ${colors.border};font-size:10px;padding:2px 7px;border-radius:20px;">${r.severity}</span>
         </div>
         <div class="card-detail">

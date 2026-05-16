@@ -471,20 +471,53 @@
     }
   }
 
+  /* ── Reverse geocode lat/lng → place name + zip ──────────────────────── */
+  async function reverseGeocode(lat, lng) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      const a = data.address || {};
+
+      // Build a readable place name: neighbourhood/suburb/town + state
+      const place = a.neighbourhood || a.suburb || a.village || a.town || a.city || a.county || '';
+      const zip   = a.postcode || '';
+      const state = a.state_abbreviation || (a.state ? a.state.slice(0, 2).toUpperCase() : '');
+
+      if (place && zip)   return `${place}, ${state} ${zip}`.trim();
+      if (place)          return `${place}, ${state}`.trim();
+      if (zip)            return `${state} ${zip}`.trim();
+      return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    } catch {
+      return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    }
+  }
+
   /* ── Submit the report ───────────────────────────────────────────────── */
-  function submitReport() {
+  async function submitReport() {
     if (pickedLat === null || pickedLng === null) {
       return showToast('Please tap the map to select a fire location.', false);
     }
 
+    // Disable button while geocoding so user can't double-submit
+    const submitBtn = document.getElementById('fr-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Getting location name…';
+
+    // Reverse geocode to get a human-readable place name
+    const locationName = await reverseGeocode(pickedLat, pickedLng);
+
     const report = {
-      id:        Date.now(),
-      lat:       pickedLat,
-      lng:       pickedLng,
+      id:           Date.now(),
+      lat:          pickedLat,
+      lng:          pickedLng,
+      locationName,
       severity,
-      type:      document.getElementById('fr-type').value,
-      notes:     document.getElementById('fr-notes').value.trim(),
-      timestamp: new Date().toLocaleString(),
+      type:         document.getElementById('fr-type').value,
+      notes:        document.getElementById('fr-notes').value.trim(),
+      timestamp:    new Date().toLocaleString(),
     };
 
     const all = JSON.parse(localStorage.getItem('fireReports') || '[]');
@@ -555,6 +588,20 @@
     initFireReportControl();
   } else {
     window.addEventListener('mapReady', initFireReportControl);
+  }
+
+  // Ask for location immediately on page load so the browser permission
+  // prompt appears right away rather than waiting for the panel to open.
+  // We store the coords in userLat/userLng for sorting — the dot only
+  // appears on the mini-map once it's initialized.
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+      },
+      () => console.info('fire-report.js: location permission denied on load')
+    );
   }
 
 })();
