@@ -30,6 +30,7 @@
     <div class="tabs">
       <button class="tab active" data-tab="resources">Resources</button>
       <button class="tab" data-tab="fires">Wildfires</button>
+      <button class="tab" data-tab="smoke">💨 Smoke</button>
     </div>
 
     <div class="panel active" id="panel-resources">
@@ -51,6 +52,15 @@
         <div class="empty"><div class="icon">Fire</div>Fetching wildfire data...</div>
       </div>
     </div>
+
+    <div class="panel" id="panel-smoke">
+      <div class="status-bar">
+        <div class="status-dot ok" id="smoke-dot"></div>
+        <span>Atmospheric Smoke Forecast (Weather Radar Mode)</span>
+      </div>
+      <div class="card-list" id="smoke-list">
+        </div>
+    </div>
   </aside>
 
   <div id="map"></div>
@@ -62,8 +72,8 @@
 <script src="js/map.js"></script>
 <script src="js/shelters.js"></script>
 <script src="js/wildfires.js"></script>
-<script src="js/smoke.js"></script> <script src="js/ui.js"></script>
-<!-- Fire incident report control (top-right panel) -->
+<script src="js/smoke.js"></script> 
+<script src="js/ui.js"></script>
 <script src="js/fire-report.js"></script>
 </body>
 </html>
