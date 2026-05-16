@@ -26,6 +26,7 @@ function setShelterStatus(kind, message) {
 
 function selectCity(city) {
   selectedCity = city;
+  selectedFire = null;
   searchQuery = city.name;
   document.getElementById('search-input').value = city.name;
 
@@ -48,21 +49,93 @@ function selectCity(city) {
   `);
 
   map.flyTo([city.lat, city.lon], 9, { duration: 0.6 });
-  loadSheltersForCity(city);
+  loadResourcesForCity(city);
+  renderFires();
 }
 
-function loadSheltersForCity(city) {
-  allShelters = HISTORICAL_2024_SHELTERS
+function loadResourcesForCity(city) {
+  const wildfireResources = HISTORICAL_2024_SHELTERS
     .filter(shelter => wasActiveOnSimulationDate(shelter))
     .map(shelter => ({
       ...shelter,
+      dataset: 'Verified wildfire response',
       distance: distanceMiles(city, shelter),
-    }))
-    .filter(shelter => shelter.distance <= SHELTER_SEARCH_RADIUS_MILES)
-    .sort((a, b) => a.distance - b.distance);
+    }));
 
-  setShelterStatus('ok', `${allShelters.length} resources active near ${city.name} on ${SIMULATION_FIRE_DATE_LABEL}`);
+  const communityResources = COMMUNITY_RESOURCE_SITES
+    .map(resource => ({
+      ...resource,
+      fire: 'Community resource',
+      opened: 'Standing community food/resource provider near the selected city',
+      activeStart: '2024-01-01',
+      activeEnd: '2024-12-31',
+      dataset: 'Community resource network',
+      distance: distanceMiles(city, resource),
+    }));
+
+  const nearby = [...wildfireResources, ...communityResources]
+    .filter(resource => resource.distance <= SHELTER_SEARCH_RADIUS_MILES)
+    .sort((a, b) => scoreResource(a) - scoreResource(b));
+
+  allShelters = nearby.length >= 5
+    ? nearby.slice(0, 12)
+    : [...nearby, ...communityResources
+        .filter(resource => !nearby.some(existing => existing.name === resource.name))
+        .sort((a, b) => a.distance - b.distance)]
+        .slice(0, 12);
+
+  setShelterStatus('ok', `${allShelters.length} resources near ${city.name}`);
   renderShelters();
+}
+
+function loadResourcesForFire(fire) {
+  selectedFire = fire;
+  selectedCity = null;
+  searchQuery = fire.name || '';
+  document.getElementById('search-input').value = fire.name || '';
+
+  if (selectedCityMarker) {
+    map.removeLayer(selectedCityMarker);
+    selectedCityMarker = null;
+  }
+
+  const wildfireResources = HISTORICAL_2024_SHELTERS
+    .filter(resource => wasActiveOnSimulationDate(resource))
+    .map(resource => ({
+      ...resource,
+      dataset: 'Verified wildfire response',
+      distance: distanceMiles(fire, resource),
+    }));
+
+  const communityResources = COMMUNITY_RESOURCE_SITES
+    .map(resource => ({
+      ...resource,
+      fire: fire.name,
+      opened: 'Standing community food/resource provider near the selected fire area',
+      activeStart: '2024-01-01',
+      activeEnd: '2024-12-31',
+      dataset: 'Community resource network',
+      distance: distanceMiles(fire, resource),
+    }));
+
+  const nearby = [...wildfireResources, ...communityResources]
+    .filter(resource => resource.distance <= INCIDENT_RESOURCE_RADIUS_MILES)
+    .sort((a, b) => scoreResource(a) - scoreResource(b));
+
+  allShelters = nearby.length >= 5
+    ? nearby.slice(0, 10)
+    : [...nearby, ...communityResources
+        .filter(resource => !nearby.some(existing => existing.name === resource.name))
+        .sort((a, b) => a.distance - b.distance)]
+        .slice(0, 10);
+
+  setShelterStatus('ok', `${allShelters.length} resources near ${fire.name || 'selected fire'}`);
+  renderShelters();
+}
+
+function scoreResource(resource) {
+  const datasetBoost = resource.dataset === 'Verified wildfire response' ? -1000 : 0;
+  return datasetBoost + resource.distance;
 }
 
 function wasActiveOnSimulationDate(shelter) {
@@ -74,6 +147,11 @@ function renderShelters() {
 
   shelterMarkers.forEach(marker => map.removeLayer(marker));
   shelterMarkers = [];
+
+  if (selectedFire) {
+    renderResourceCards(list);
+    return;
+  }
 
   if (!searchQuery) {
     const activeCount = HISTORICAL_2024_SHELTERS.filter(wasActiveOnSimulationDate).length;
@@ -95,7 +173,27 @@ function renderShelters() {
     return;
   }
 
-  list.innerHTML = '';
+  renderResourceCards(list);
+}
+
+function renderResourceCards(list) {
+  if (!allShelters.length) {
+    list.innerHTML = '<div class="empty"><div class="icon">Resources</div>No nearby resources found.</div>';
+    return;
+  }
+
+    list.innerHTML = selectedFire
+    ? `<div class="empty" style="padding:14px 12px;text-align:left">
+        <strong>${allShelters.length}</strong> nearby resources for ${selectedFire.name || 'selected fire'}<br>
+        Wildfire-response resources appear first when active; standing food/resource providers fill coverage gaps.
+      </div>`
+    : selectedCity
+      ? `<div class="empty" style="padding:14px 12px;text-align:left">
+          <strong>${allShelters.length}</strong> nearby resources for ${selectedCity.name}<br>
+          Nearby food/resource providers are included so affected areas have support options.
+        </div>`
+    : '';
+
   allShelters.forEach(shelter => {
     const card = document.createElement('div');
     card.className = 'card';
@@ -105,11 +203,12 @@ function renderShelters() {
         <span class="badge open">${shelter.type}</span>
       </div>
       <div class="card-detail">
-        <strong>Fire:</strong> ${shelter.fire}<br>
+        <strong>Context:</strong> ${shelter.fire || 'Community resource'}<br>
         <strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi<br>
         <strong>Active window:</strong> ${formatActiveWindow(shelter)}<br>
-        <strong>2024 status:</strong> ${shelter.opened}<br>
+        <strong>Resource note:</strong> ${shelter.opened}<br>
         <strong>Address:</strong> ${shelter.address}<br>
+        ${shelter.dataset ? `<strong>Dataset:</strong> ${shelter.dataset}<br>` : ''}
         <strong>Source:</strong> <a href="${shelter.sourceUrl}" target="_blank" rel="noopener noreferrer">${shelter.sourceName}</a>
       </div>`;
 
@@ -126,7 +225,7 @@ function renderShelters() {
 
     marker.bindPopup(`
       <div class="popup-title">${shelter.name}</div>
-      <div class="popup-row"><strong>Fire:</strong> ${shelter.fire}</div>
+      <div class="popup-row"><strong>Context:</strong> ${shelter.fire || 'Community resource'}</div>
       <div class="popup-row"><strong>Type:</strong> ${shelter.type}</div>
       <div class="popup-row"><strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi</div>
       <div class="popup-row"><strong>Address:</strong> ${shelter.address}</div>

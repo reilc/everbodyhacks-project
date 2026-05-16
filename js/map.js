@@ -3,6 +3,7 @@
 // The `map` variable is global so shelters.js and wildfires.js can add markers.
 
 const map = L.map('map', { zoomControl: false });
+window.map = map;
 
 // Put zoom controls in bottom-right so they don't clash with the sidebar
 L.control.zoom({ position: 'bottomright' }).addTo(map);

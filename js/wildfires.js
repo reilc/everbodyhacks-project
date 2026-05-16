@@ -156,21 +156,39 @@ function renderFires() {
   fireMarkers.forEach(marker => map.removeLayer(marker));
   fireMarkers = [];
 
-  const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
-  const perimeters = Array.isArray(allFires.perimeters) ? allFires.perimeters : [];
+  const allStats = Array.isArray(allFires.stats) ? allFires.stats : [];
+  const allPerimeters = Array.isArray(allFires.perimeters) ? allFires.perimeters : [];
+  const stats = selectedCity
+    ? allStats.filter(fire => distanceMiles(selectedCity, fire) <= CITY_FIRE_RADIUS_MILES)
+    : allStats;
+  const perimeters = selectedCity
+    ? allPerimeters.filter(fire => distanceMiles(selectedCity, fire) <= CITY_FIRE_RADIUS_MILES)
+    : allPerimeters;
 
   if (!stats.length && !perimeters.length) {
-    list.innerHTML = '<div class="empty"><div class="icon">Fire</div>No 2024 wildfire records loaded.</div>';
+    const context = selectedCity ? ` near ${selectedCity.name}` : '';
+    list.innerHTML = `<div class="empty"><div class="icon">Fire</div>No ${SIMULATION_FIRE_DATE_LABEL} wildfire records${context}.</div>`;
+    updateFireStatus(stats, perimeters);
     return;
   }
 
   renderPerimeters(perimeters);
   renderFirePoints(stats);
   renderFireCards(list, stats, perimeters);
+  updateFireStatus(stats, perimeters);
 
   if (typeof renderSmoke === 'function') {
     renderSmoke();
   }
+}
+
+function updateFireStatus(stats, perimeters) {
+  const status = document.getElementById('fire-status');
+  if (!status) return;
+
+  status.textContent = selectedCity
+    ? `${stats.length} nearby fire records within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}`
+    : `Live simulation: ${stats.length} fire records on ${SIMULATION_FIRE_DATE_LABEL}`;
 }
 
 function renderPerimeters(perimeters) {
@@ -182,8 +200,10 @@ function renderPerimeters(perimeters) {
       {
         color: '#ff3333',
         fillColor: '#ff3333',
-        fillOpacity: 0.3,
-        weight: 1.5,
+        fillOpacity: 0.12,
+        weight: 1,
+        dashArray: '6, 4',
+        interactive: false,
       }
     ).addTo(map);
 
@@ -198,21 +218,20 @@ function renderPerimeters(perimeters) {
 
 function renderFirePoints(stats) {
   stats.forEach(fire => {
+    const heatHalo = L.circle([fire.lat, fire.lon], {
+      radius: getFireHaloRadius(fire.acres),
+      color: '#ff3333',
+      fillColor: '#ff3333',
+      fillOpacity: 0.18,
+      weight: 1.5,
+    }).addTo(map);
+
     const marker = L.circleMarker([fire.lat, fire.lon], {
       color: '#ff3333',
       fillColor: '#ff3333',
       fillOpacity: 0.82,
       radius: getFireRadius(fire.acres),
       weight: 2,
-    }).addTo(map);
-
-    const heatHalo = L.circle([fire.lat, fire.lon], {
-      radius: getFireHaloRadius(fire.acres),
-      color: '#ff3333',
-      fillColor: '#ff3333',
-      fillOpacity: 0.12,
-      weight: 1,
-      interactive: false,
     }).addTo(map);
 
     marker.bindPopup(`
@@ -224,7 +243,24 @@ function renderFirePoints(stats) {
       <div class="popup-row"><strong>Source:</strong> WA DNR Fire Statistics</div>
     `);
 
+    marker.on('click', () => selectFire(fire));
+    heatHalo.on('click', () => selectFire(fire));
     fireMarkers.push(heatHalo, marker);
+  });
+}
+
+function selectFire(fire) {
+  loadResourcesForFire(fire);
+  map.flyTo([fire.lat, fire.lon], 10, { duration: 0.8 });
+  switchToResourcesTab();
+}
+
+function switchToResourcesTab() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === 'resources');
+  });
+  document.querySelectorAll('.panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'panel-resources');
   });
 }
 
@@ -235,7 +271,8 @@ function renderFireCards(list, stats, perimeters) {
 
   list.innerHTML = `
     <div class="empty" style="padding:14px 12px;text-align:left">
-      <strong>${stats.length}</strong> current fires in Washington.
+      <strong>${stats.length}</strong> ${selectedCity ? `nearby fires within ${CITY_FIRE_RADIUS_MILES} mi of ${selectedCity.name}` : 'current fires in Washington'}.
+      ${perimeters.length ? `<br><strong>${perimeters.length}</strong> mapped perimeter context layer${perimeters.length === 1 ? '' : 's'} nearby.` : ''}
     </div>`;
 
   largestStats.forEach(fire => {
@@ -253,7 +290,7 @@ function renderFireCards(list, stats, perimeters) {
         <strong>Source:</strong> WA DNR Fire Statistics
       </div>`;
 
-    card.addEventListener('click', () => map.flyTo([fire.lat, fire.lon], 11, { duration: 0.8 }));
+    card.addEventListener('click', () => selectFire(fire));
     list.appendChild(card);
   });
 }
