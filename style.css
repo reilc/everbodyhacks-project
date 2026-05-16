@@ -5,12 +5,12 @@
   --surface2: #f8f8f8;
   --border: #dedede;
   --accent: #e8502a;
-  --accent2: #1f6feb;
+  --accent2: #1f8f55;
   --danger: #c62828;
   --warning: #b56b00;
   --text: #24272b;
   --text-muted: #666f78;
-  --shelter: #1f6feb;
+  --shelter: #1f8f55;
   --fire: #e8502a;
 }
 
@@ -153,7 +153,7 @@ body {
   border-radius: 20px; font-family: 'DM Mono', monospace;
 }
 
-.badge.open { background: rgba(31,111,235,0.12); color: var(--accent2); }
+.badge.open { background: rgba(31,143,85,0.13); color: var(--accent2); }
 .badge.fire { background: rgba(232,80,42,0.14); color: var(--fire); }
 
 .card-detail { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
@@ -209,6 +209,39 @@ body {
 .leaflet-control-attribution {
   background: rgba(255, 255, 255, 0.84) !important;
   color: #6b7280 !important;
+}
+
+.smoke-legend {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(31, 41, 51, 0.14);
+  color: var(--text);
+  font-size: 12px;
+  margin-right: 10px;
+  min-width: 150px;
+  padding: 10px 12px;
+}
+
+.smoke-legend-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.smoke-legend-item {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin: 6px 0;
+  white-space: nowrap;
+}
+
+.smoke-legend-swatch {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+  display: inline-block;
+  height: 12px;
+  width: 12px;
 }
 
 .leaflet-popup-content-wrapper {

@@ -193,6 +193,10 @@ function renderFires() {
   if (typeof renderSmoke === 'function') {
     renderSmoke();
   }
+
+  if (document.querySelector('.tab.active')?.dataset.tab === 'smoke') {
+    fireMarkers.forEach(marker => map.removeLayer(marker));
+  }
 }
 
 function updateFireStatus(stats, perimeters) {
@@ -453,13 +457,4 @@ function getFireHaloRadius(acres) {
   if (acres < 1000) return 24000;
   if (acres < 10000) return 33000;
   return 46000;
-}
-
-function getFireHaloRadius(acres) {
-  if (!Number.isFinite(acres) || acres <= 1) return 50;
-  if (acres < 10)    return 100;
-  if (acres < 100)   return 300;
-  if (acres < 1000)  return 800;
-  if (acres < 10000) return 2000;
-  return 5000;
 }

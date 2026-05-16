@@ -42,8 +42,8 @@ function selectCity(city) {
   }
 
   selectedCityMarker = L.circleMarker([city.lat, city.lon], {
-    color: '#2f80ed',
-    fillColor: '#2f80ed',
+    color: '#1f8f55',
+    fillColor: '#1f8f55',
     fillOpacity: 0.95,
     radius: 9,
     weight: 3,
@@ -201,13 +201,11 @@ function renderResourceCards(list) {
 
     list.innerHTML = selectedFire
     ? `<div class="empty" style="padding:14px 12px;text-align:left">
-        Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedFire.name || 'selected fire'}<br>
-        Documented wildfire shelters appear first when active on July 4. Food banks and resource centers use 2024 service evidence; verify real-time availability with WA 211.
+        Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedFire.name || 'selected fire'}.
       </div>`
     : selectedCity
       ? `<div class="empty" style="padding:14px 12px;text-align:left">
-          Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedCity.name}<br>
-          These are confirmed 2024 providers, not a promise of open beds. Call ahead or use WA 211 for real-time availability.
+          Showing <strong>${allShelters.length}</strong> nearest food/shelter resources for ${selectedCity.name}.
         </div>`
     : '';
 
@@ -229,7 +227,7 @@ function renderResourceCards(list) {
 
     const marker = L.circleMarker([shelter.lat, shelter.lon], {
       color: '#ffffff',
-      fillColor: '#1f6feb',
+      fillColor: '#1f8f55',
       fillOpacity: 0.95,
       radius: 8,
       weight: 3,

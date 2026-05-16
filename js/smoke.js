@@ -3,6 +3,36 @@
 // across Washington State locked specifically to the July 4, 2024 simulation.
 
 let smokeLayersGroup = L.layerGroup();
+let smokeLegendControl = null;
+
+function showSmokeLegend() {
+  if (smokeLegendControl) {
+    smokeLegendControl.addTo(map);
+    return;
+  }
+
+  smokeLegendControl = L.control({ position: 'topright' });
+  smokeLegendControl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'smoke-legend');
+    div.innerHTML = `
+      <div class="smoke-legend-title">Smoke Risk</div>
+      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#2e7d32"></span>Good</div>
+      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#f2c94c"></span>Moderate</div>
+      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#fcae91"></span>Elevated</div>
+      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#fb6a4a"></span>Unhealthy</div>
+      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#de2d26"></span>Very Unhealthy</div>
+      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#a50f15"></span>Hazardous</div>
+    `;
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+    return div;
+  };
+  smokeLegendControl.addTo(map);
+}
+
+function hideSmokeLegend() {
+  if (smokeLegendControl) map.removeControl(smokeLegendControl);
+}
 
 // ── MAIN ENTRY POINT CALLED ON DATA LOAD ──
 function renderSmoke() {

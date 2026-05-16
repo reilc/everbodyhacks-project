@@ -3,14 +3,14 @@
  * Handles environmental data enrichment, severity color spectrums, and map heatmaps.
  */
 
-// Custom color palette graduating smoothly from Cool Blue (Good) to Deep Dark Red (Hazardous)
+// Custom color palette graduating from low smoke risk to hazardous smoke risk.
 const EPA_BREAKPOINTS = [
-    { max: 50,  class: "aqi-good", status: "Good", color: "#2f80ed", fillOpacity: 0.15 },               // Cool Blue
-    { max: 100, class: "aqi-moderate", status: "Moderate", color: "#6baed6", fillOpacity: 0.25 },       // Light Ice Blue
-    { max: 150, class: "aqi-unhealthy-sensitive", status: "Elevated Risk", color: "#fcae91", fillOpacity: 0.4 }, // Soft Peach/Coral
-    { max: 200, class: "aqi-unhealthy", status: "Unhealthy", color: "#fb6a4a", fillOpacity: 0.55 },       // Bright Orange-Red
-    { max: 300, class: "aqi-very-unhealthy", status: "Very Unhealthy", color: "#de2d26", fillOpacity: 0.7 },  // Crimson Red
-    { max: Infinity, class: "aqi-hazardous", status: "Hazardous Severe", color: "#a50f15", fillOpacity: 0.85 } // Deep Dark Maroon Red
+    { max: 50,  class: "aqi-good", status: "Good", color: "#2e7d32", fillOpacity: 0.15 },
+    { max: 100, class: "aqi-moderate", status: "Moderate", color: "#f2c94c", fillOpacity: 0.25 },
+    { max: 150, class: "aqi-unhealthy-sensitive", status: "Elevated Risk", color: "#fcae91", fillOpacity: 0.4 },
+    { max: 200, class: "aqi-unhealthy", status: "Unhealthy", color: "#fb6a4a", fillOpacity: 0.55 },
+    { max: 300, class: "aqi-very-unhealthy", status: "Very Unhealthy", color: "#de2d26", fillOpacity: 0.7 },
+    { max: Infinity, class: "aqi-hazardous", status: "Hazardous Severe", color: "#a50f15", fillOpacity: 0.85 }
 ];
 
 /**
