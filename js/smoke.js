@@ -85,40 +85,38 @@ function hideMapLegend() {
 const showSmokeLegend = showMapLegend;
 const hideSmokeLegend = hideMapLegend;
 
-// ── MAIN ENTRY POINT CALLED ON DATA LOAD ──
 function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
 
-  if (document.querySelector('.tab.active')?.dataset.tab === 'smoke') {
-    if (typeof shelterMarkers !== 'undefined') shelterMarkers.forEach(marker => map.removeLayer(marker));
-    if (typeof selectedCityMarker !== 'undefined' && selectedCityMarker) map.removeLayer(selectedCityMarker);
+  const today = new Date();
+  const options = { month: 'long', day: 'numeric', year: 'numeric' };
+  const formattedDate = today.toLocaleDateString('en-US', options);
+
+  const statusTextEl = document.getElementById('smoke-status-text');
+  if (statusTextEl) {
+    statusTextEl.innerText = `Smoke index for ${formattedDate}`;
   }
 
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   if (!stats.length) {
-    smokeList.innerHTML = '<div class="empty">No July 4 fire records found for smoke simulation.</div>';
+    smokeList.innerHTML = '<div class="empty">No wildfire focal targets found for tracking.</div>';
     return;
   }
 
-  // 1. Build a clean, static heading indicator without emojis or extra headers
   buildStaticUI(smokeList, stats);
 
-  // 2. Compute and paint the edge-to-edge radar mesh layer for July 4th
   generateWeatherRadarGrid(stats, 0);
 }
 
-// ── WEATHER RADAR ENGINE: Inverse Distance Weighting (IDW) Grid Interpolation ──
 function generateWeatherRadarGrid(stats, dayOffset) {
-  // Clear out the previous canvas layers cleanly
+
   smokeLayersGroup.clearLayers();
   map.removeLayer(smokeLayersGroup);
 
-  // Define bounding box limits spanning across the entirety of Washington State
   const latMin = 45.5, latMax = 49.0, latStep = 0.12; 
   const lonMin = -124.8, lonMax = -116.9, lonStep = 0.18;
 
-  // Scan across the geographical coordinate matrix grid lines
   for (let lat = latMin; lat <= latMax; lat += latStep) {
     for (let lon = lonMin; lon <= lonMax; lon += lonStep) {
       
@@ -129,11 +127,9 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       stats.forEach((fire, idx) => {
         const distance = Math.sqrt(Math.pow(lat - fire.lat, 2) + Math.pow(lon - fire.lon, 2));
         
-        // Static baseline AQI variance locked onto our fixed date seed pattern
         const seedValue = (fire.lat + fire.lon + idx + dayOffset) * 100;
         const fireAQIBaseline = Math.floor((Math.abs(Math.sin(seedValue)) * 260) + 30);
         
-        // Inverse distance formula weight coefficient 
         const weight = 1 / Math.pow(distance + 0.15, 2); 
         totalWeight += weight;
         interpolatedAQI += fireAQIBaseline * weight;
@@ -142,15 +138,13 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       const finalGridAQI = Math.min(Math.floor(interpolatedAQI / totalWeight), 350);
       const metrics = getAQIMetrics(finalGridAQI);
 
-      // Skip painting grids that are entirely clean to keep map legible
       if (finalGridAQI < 35) continue; 
 
-      // Render seamless rectangular tile grid cells to cover the full canvas scale
       const bounds = [[lat, lon], [lat + latStep, lon + lonStep]];
       const gridCell = L.rectangle(bounds, {
         color: 'transparent',
         fillColor: metrics.color,
-        fillOpacity: metrics.fillOpacity * 0.42, // Balanced opacity contrast against dark tiles
+        fillOpacity: metrics.fillOpacity * 0.42,
         interactive: true
       });
 
@@ -164,19 +158,15 @@ function generateWeatherRadarGrid(stats, dayOffset) {
     }
   }
 
-  // Only project the layers if the smoke view panel is currently selected active
   const activeTab = document.querySelector('.tab.active');
   if (activeTab && activeTab.dataset.tab === 'smoke') {
     smokeLayersGroup.addTo(map);
   }
 }
 
-// ── STATIC INTERFACE GENERATOR ──
 function buildStaticUI(container, stats) {
-  // Completely removed the centered July 4, 2024 date box wrapper
   container.innerHTML = `<div id="smoke-cards-wrapper"></div>`;
 
-  // Render supporting cards directly into the panel layout
   const cardsWrapper = document.getElementById('smoke-cards-wrapper');
   stats.forEach(f => {
     const localSeed = (f.lat + f.lon + 0) * 100;
