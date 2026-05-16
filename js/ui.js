@@ -33,6 +33,7 @@ searchInput.addEventListener('input', e => {
 
   if (!stillSelectedCity) {
     selectedCity = null;
+    selectedFire = null;
     allShelters = [];
     shelterMarkers.forEach(marker => map.removeLayer(marker));
     shelterMarkers = [];
@@ -44,6 +45,7 @@ searchInput.addEventListener('input', e => {
   }
 
   renderShelters();
+  renderFires();
 });
 
 searchInput.addEventListener('keydown', e => {
