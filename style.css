@@ -1,15 +1,15 @@
 /* ── CSS Variables (colours, fonts) ── */
 :root {
-  --bg: #f5f5f5;
+  --bg: #f6f6f6;
   --surface: #ffffff;
-  --surface2: #f7f7f7;
-  --border: #d9d9d9;
+  --surface2: #f8f8f8;
+  --border: #dedede;
   --accent: #e8502a;
   --accent2: #1f6feb;
   --danger: #c62828;
   --warning: #b56b00;
-  --text: #1f2933;
-  --text-muted: #5f6b76;
+  --text: #24272b;
+  --text-muted: #666f78;
   --shelter: #1f6feb;
   --fire: #e8502a;
 }
@@ -181,7 +181,35 @@ body {
 
 /* ── Map ── */
 #map { flex: 1; }
-.leaflet-container { background: #b8ddf4; }
+.leaflet-container { background: #b9def2; }
+
+.leaflet-tile-pane {
+  filter: saturate(0.8) contrast(0.96) brightness(1.04);
+}
+
+.leaflet-control-zoom,
+.leaflet-control-attribution,
+.leaflet-bar {
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 14px rgba(31, 41, 51, 0.10) !important;
+}
+
+.leaflet-control-zoom a,
+.leaflet-bar a {
+  background: #ffffff !important;
+  color: #24272b !important;
+  border-bottom-color: var(--border) !important;
+}
+
+.leaflet-control-zoom a:hover,
+.leaflet-bar a:hover {
+  background: #f5f5f5 !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.84) !important;
+  color: #6b7280 !important;
+}
 
 .leaflet-popup-content-wrapper {
   background: var(--surface); border: 1px solid var(--border);

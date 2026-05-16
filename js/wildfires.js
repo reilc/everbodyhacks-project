@@ -9,25 +9,31 @@ async function loadWildfires() {
 
   dot.className = 'status-dot loading';
   status.textContent = `Loading ${SIMULATION_FIRE_DATE_LABEL} fire simulation...`;
+  allFires = { stats: [], perimeters: [] };
 
   try {
-    const [stats, perimeters] = await Promise.all([
-      loadDnrFireStats(),
-      loadFirePerimeters(),
-    ]);
-
-    allFires = { stats, perimeters };
-
+    const stats = await loadDnrFireStats();
+    allFires = { stats, perimeters: [] };
     dot.className = 'status-dot ok';
-    status.textContent = `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
+    status.textContent = `${stats.length} WA DNR fire records loaded; loading mapped perimeters...`;
+    renderFires();
+
+    try {
+      const perimeters = await loadFirePerimeters();
+      allFires = { stats, perimeters };
+      status.textContent = `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
+      renderFires();
+    } catch (perimeterErr) {
+      console.warn('2024 wildfire perimeter layer error:', perimeterErr);
+      status.textContent = `${SIMULATION_FIRE_DATE_LABEL} simulation: ${stats.length} WA DNR fire records`;
+    }
   } catch (err) {
     console.error('2024 wildfire data error:', err);
     dot.className = 'status-dot err';
     status.textContent = 'Failed to load 2024 wildfire data';
     allFires = { stats: [], perimeters: [] };
+    renderFires();
   }
-
-  renderFires();
 }
 
 async function loadDnrFireStats() {
@@ -432,12 +438,21 @@ function formatAcres(acres) {
 }
 
 function getFireRadius(acres) {
-  if (!Number.isFinite(acres) || acres <= 1) return 3;
-  if (acres < 10) return 4;
-  if (acres < 100) return 5;
-  if (acres < 1000) return 6;
-  if (acres < 10000) return 8;
-  return 10;
+  if (!Number.isFinite(acres) || acres <= 1) return 5;
+  if (acres < 10) return 6;
+  if (acres < 100) return 7;
+  if (acres < 1000) return 8;
+  if (acres < 10000) return 10;
+  return 12;
+}
+
+function getFireHaloRadius(acres) {
+  if (!Number.isFinite(acres) || acres <= 1) return 9000;
+  if (acres < 10) return 13000;
+  if (acres < 100) return 18000;
+  if (acres < 1000) return 24000;
+  if (acres < 10000) return 33000;
+  return 46000;
 }
 
 function getFireHaloRadius(acres) {
