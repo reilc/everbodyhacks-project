@@ -295,9 +295,15 @@
   /* ── State ───────────────────────────────────────────────────────────── */
   let miniMap = null;
   let pinMarker = null;
+  let userDot = null;       // Blue dot showing the user's real GPS location
+  let userLat = null;       // Stored so reports can be sorted by proximity
+  let userLng = null;
   let pickedLat = null;
   let pickedLng = null;
   let severity = 'high';
+
+  // Expose user location globally so wildfires.js can sort by proximity
+  window.frUserLocation = () => userLat !== null ? { lat: userLat, lng: userLng } : null;
 
   /* ── Leaflet Control ─────────────────────────────────────────────────── */
   function initFireReportControl() {
@@ -429,10 +435,40 @@
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       pos => {
-        if (miniMap) miniMap.setView([pos.coords.latitude, pos.coords.longitude], 13);
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+
+        if (miniMap) {
+          miniMap.setView([userLat, userLng], 13);
+          placeUserDot(userLat, userLng);
+        }
       },
       () => console.info('fire-report.js: geolocation denied or unavailable')
     );
+  }
+
+  /* ── Place / update the blue "you are here" dot on the mini-map ──────── */
+  function placeUserDot(lat, lng) {
+    const blueDotIcon = L.divIcon({
+      className: '',
+      html: `
+        <div style="
+          width: 16px; height: 16px;
+          background: #4A90E2;
+          border: 3px solid #fff;
+          border-radius: 50%;
+          box-shadow: 0 0 0 3px rgba(74,144,226,0.35), 0 2px 6px rgba(0,0,0,0.4);
+        "></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+
+    if (userDot) {
+      userDot.setLatLng([lat, lng]);
+    } else {
+      userDot = L.marker([lat, lng], { icon: blueDotIcon, interactive: false, zIndexOffset: -100 })
+        .addTo(miniMap);
+    }
   }
 
   /* ── Submit the report ───────────────────────────────────────────────── */

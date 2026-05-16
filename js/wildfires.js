@@ -224,12 +224,36 @@ function buildReportSection() {
     `;
     section.appendChild(empty);
   } else {
-    // Most recent first
-    [...reports].reverse().forEach(r => {
+    const SEV_RANK = { high: 0, medium: 1, low: 2 };
+
+    // Get user location from fire-report.js if available
+    const userLoc = typeof window.frUserLocation === 'function' ? window.frUserLocation() : null;
+
+    const sorted = [...reports].sort((a, b) => {
+      // Primary sort: proximity to user (closest first)
+      if (userLoc) {
+        const distA = Math.hypot(a.lat - userLoc.lat, a.lng - userLoc.lng);
+        const distB = Math.hypot(b.lat - userLoc.lat, b.lng - userLoc.lng);
+        if (Math.abs(distA - distB) > 0.001) return distA - distB;
+      }
+      // Secondary sort: severity (high → medium → low)
+      return (SEV_RANK[a.severity] ?? 1) - (SEV_RANK[b.severity] ?? 1);
+    });
+
+    sorted.forEach(r => {
       const colors =
         r.severity === 'high'   ? { bg:'#FCEBEB', border:'#F09595', text:'#791F1F', dot:'#E24B4A' } :
         r.severity === 'medium' ? { bg:'#FAEEDA', border:'#F0C080', text:'#854F0B', dot:'#EF9F27' } :
                                   { bg:'#EAF3DE', border:'#97C459', text:'#3B6D11', dot:'#639922' };
+
+      // Distance label if user location is known
+      let distLabel = '';
+      if (userLoc) {
+        const km = Math.hypot(r.lat - userLoc.lat, r.lng - userLoc.lng) * 111;
+        distLabel = km < 1
+          ? `<span style="color:var(--text-muted);font-size:11px;">📏 ${Math.round(km * 1000)} m away</span><br>`
+          : `<span style="color:var(--text-muted);font-size:11px;">📏 ${km.toFixed(1)} km away</span><br>`;
+      }
 
       const card = document.createElement('div');
       card.className = 'card report-card';
@@ -241,9 +265,9 @@ function buildReportSection() {
           <span class="badge" style="background:${colors.bg};color:${colors.text};border:1px solid ${colors.border};font-size:10px;padding:2px 7px;border-radius:20px;">${r.severity}</span>
         </div>
         <div class="card-detail">
+          ${distLabel}
           ${r.type  ? `<strong>Type:</strong> ${r.type}<br>`   : ''}
           ${r.notes ? `<strong>Notes:</strong> ${r.notes}<br>` : ''}
-          <strong>📍</strong> ${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}<br>
           <span style="color:var(--text-muted);font-size:11px;">🕐 ${r.timestamp}</span>
         </div>
       `;
