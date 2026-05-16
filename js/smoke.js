@@ -87,14 +87,10 @@ function generateWeatherRadarGrid(stats, dayOffset) {
 
 // ── STATIC INTERFACE GENERATOR ──
 function buildStaticUI(container, stats) {
-  container.innerHTML = `
-    <div style="padding: 14px; background: var(--surface2); border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border); text-align: center;">
-      <span style="font-size: 16px; font-weight: bold; color: var(--accent); font-family: 'DM Sans', sans-serif;">July 4, 2024</span>
-    </div>
-    <div id="smoke-cards-wrapper"></div>
-  `;
+  // Completely removed the centered July 4, 2024 date box wrapper
+  container.innerHTML = `<div id="smoke-cards-wrapper"></div>`;
 
-  // Render supporting cards below the heading layout
+  // Render supporting cards directly into the panel layout
   const cardsWrapper = document.getElementById('smoke-cards-wrapper');
   stats.forEach(f => {
     const localSeed = (f.lat + f.lon + 0) * 100;
