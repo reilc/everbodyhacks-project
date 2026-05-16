@@ -2,7 +2,7 @@
 
 A web app built for **Everybody Hacks 2026** that helps Washington State residents prepare for, respond to, and recover from wildfires. Simulated around the **July 4, 2024** WA wildfire event.
 
-https://everbodyhacks-project.vercel.app/
+[(https://everbodyhacks26-project.vercel.app)]
 
 ---
 
