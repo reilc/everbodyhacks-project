@@ -544,7 +544,6 @@
     document.querySelectorAll('.fr-sev-btn').forEach(b => b.className = 'fr-sev-btn');
     document.getElementById('fr-sev-high').classList.add('active-high');
 
-    const submitBtn = document.getElementById('fr-submit');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Pin a location to submit';
 
