@@ -42,8 +42,8 @@ function selectCity(city) {
   }
 
   selectedCityMarker = L.circleMarker([city.lat, city.lon], {
-    color: '#1f8f55',
-    fillColor: '#1f8f55',
+    color: '#2563eb',
+    fillColor: '#2563eb',
     fillOpacity: 0.95,
     radius: 9,
     weight: 3,

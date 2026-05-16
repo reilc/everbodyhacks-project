@@ -14,15 +14,18 @@ document.querySelectorAll('.tab').forEach(tab => {
       if (typeof shelterMarkers !== 'undefined') shelterMarkers.forEach(m => map.removeLayer(m));
       if (typeof selectedCityMarker !== 'undefined' && selectedCityMarker) map.removeLayer(selectedCityMarker);
       if (typeof showMapLegend === 'function') showMapLegend();
+      if (typeof updateMapLegendContent === 'function') updateMapLegendContent();
     } else if (tab.dataset.tab === 'fires') {
       if (typeof smokeLayersGroup !== 'undefined') map.removeLayer(smokeLayersGroup);
       if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.addLayer(m));
       if (typeof showMapLegend === 'function') showMapLegend();
+      if (typeof updateMapLegendContent === 'function') updateMapLegendContent();
     } else {
       // Shelters tab view configuration
       if (typeof smokeLayersGroup !== 'undefined') map.removeLayer(smokeLayersGroup);
       if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.addLayer(m));
       if (typeof showMapLegend === 'function') showMapLegend();
+      if (typeof updateMapLegendContent === 'function') updateMapLegendContent();
       renderShelters();
     }
   });

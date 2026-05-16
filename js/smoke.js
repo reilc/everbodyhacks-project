@@ -4,17 +4,60 @@
 
 let smokeLayersGroup = L.layerGroup();
 let mapLegendControl = null;
+let mapLegendEl = null;
 
 function showMapLegend() {
   if (mapLegendControl) {
     mapLegendControl.addTo(map);
+    updateMapLegendContent();
     return;
   }
 
   mapLegendControl = L.control({ position: 'topright' });
   mapLegendControl.onAdd = function() {
     const div = L.DomUtil.create('div', 'map-legend');
-    div.innerHTML = `
+    mapLegendEl = div;
+    updateMapLegendContent();
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+    return div;
+  };
+  mapLegendControl.addTo(map);
+}
+
+function updateMapLegendContent() {
+  if (!mapLegendEl) return;
+
+  const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+  mapLegendEl.innerHTML = activeTab === 'smoke'
+    ? `
+      <div class="map-legend-title">Smoke Legend</div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol smoke-risk-symbol" style="background:#f2c94c"></span>
+        <span>Low smoke</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol smoke-risk-symbol" style="background:#f6ad55"></span>
+        <span>Moderate smoke</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol smoke-risk-symbol" style="background:#fcae91"></span>
+        <span>Elevated risk</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol smoke-risk-symbol" style="background:#fb6a4a"></span>
+        <span>Unhealthy</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol smoke-risk-symbol" style="background:#de2d26"></span>
+        <span>Very unhealthy</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol smoke-risk-symbol" style="background:#a50f15"></span>
+        <span>Hazardous</span>
+      </div>
+    `
+    : `
       <div class="map-legend-title">Map Legend</div>
       <div class="map-legend-item">
         <span class="map-legend-symbol wildfire-symbol"></span>
@@ -33,11 +76,6 @@ function showMapLegend() {
         <span>City searched</span>
       </div>
     `;
-    L.DomEvent.disableClickPropagation(div);
-    L.DomEvent.disableScrollPropagation(div);
-    return div;
-  };
-  mapLegendControl.addTo(map);
 }
 
 function hideMapLegend() {

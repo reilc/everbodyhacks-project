@@ -269,7 +269,13 @@ body {
 
 .city-symbol {
   background: #ffffff;
-  border: 3px solid #1f8f55;
+  border: 3px solid #2563eb;
+}
+
+.smoke-risk-symbol {
+  border-radius: 3px;
+  border-color: rgba(31, 41, 51, 0.22);
+  box-shadow: none;
 }
 
 .leaflet-popup-content-wrapper {
