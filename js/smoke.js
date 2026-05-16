@@ -11,14 +11,14 @@ function renderSmoke() {
 
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   if (!stats.length) {
-    smokeList.innerHTML = '<div class="empty"><div class="icon">💨</div>No wildfire focal targets found for tracking.</div>';
+    smokeList.innerHTML = '<div class="empty">No wildfire focal targets found for tracking.</div>';
     return;
   }
 
-  // 1. Build a clean, static heading indicator instead of a slider playback deck
+  // 1. Build a clean, static heading indicator without emojis or extra headers
   buildStaticUI(smokeList, stats);
 
-  // 2. Compute and paint the edge-to-edge radar mesh layer for July 4th (using index 0 as base)
+  // 2. Compute and paint the edge-to-edge radar mesh layer for July 4th
   generateWeatherRadarGrid(stats, 0);
 }
 
@@ -69,7 +69,7 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       });
 
       gridCell.bindPopup(`
-        <div class="popup-title">💨 Regional Air Quality Canvas</div>
+        <div class="popup-title">Regional Air Quality Canvas</div>
         <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
         <div class="popup-row"><strong>Grid Air Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);
@@ -89,7 +89,6 @@ function generateWeatherRadarGrid(stats, dayOffset) {
 function buildStaticUI(container, stats) {
   container.innerHTML = `
     <div style="padding: 14px; background: var(--surface2); border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border); text-align: center;">
-      <h3 style="font-size: 13px; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">📅 Active Simulation Window</h3>
       <span style="font-size: 16px; font-weight: bold; color: var(--accent); font-family: 'DM Sans', sans-serif;">July 4, 2024</span>
     </div>
     <div id="smoke-cards-wrapper"></div>
@@ -106,7 +105,7 @@ function buildStaticUI(container, stats) {
     card.className = 'card';
     card.style.borderLeft = `4px solid ${metrics.color}`;
     card.innerHTML = `
-      <div class="card-title">💨 ${f.name} Sector</div>
+      <div class="card-title">${f.name} Sector</div>
       <div class="card-detail">
         <strong>Station AQI Projection:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
         <strong>Risk Designation:</strong> ${metrics.status}
