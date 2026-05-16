@@ -1,75 +1,10 @@
 // ── js/smoke.js ────────────────────────────────────────────
-// Generates a static, edge-to-edge interpolated weather radar mesh across Washington State.
+// Generates a static, edge-to-edge interpolated weather radar mesh 
+// across Washington State locked specifically to the July 4, 2024 simulation.
 
 let smokeLayersGroup = L.layerGroup();
-let mapLegendControl = null;
-let mapLegendEl = null;
 
-function showMapLegend() {
-  if (mapLegendControl) {
-    mapLegendControl.addTo(map);
-    updateMapLegendContent();
-    return;
-  }
-
-  mapLegendControl = L.control({ position: 'topright' });
-  mapLegendControl.onAdd = function() {
-    const div = L.DomUtil.create('div', 'map-legend');
-    mapLegendEl = div;
-    updateMapLegendContent();
-    L.DomEvent.disableClickPropagation(div);
-    L.DomEvent.disableScrollPropagation(div);
-    return div;
-  };
-  mapLegendControl.addTo(map);
-}
-
-function updateMapLegendContent() {
-  if (!mapLegendEl) return;
-
-  const activeTab = document.querySelector('.tab.active')?.dataset.tab;
-  mapLegendEl.innerHTML = activeTab === 'smoke'
-    ? buildSmokeLegendHtml()
-    : `
-      <div class="map-legend-title">Map Legend</div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol wildfire-symbol"></span>
-        <span>Wildfire</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol selected-wildfire-symbol"></span>
-        <span>Wildfire selected</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol resource-symbol"></span>
-        <span>Resource</span>
-      </div>
-      <div class="map-legend-item">
-        <span class="map-legend-symbol city-symbol"></span>
-        <span>City searched</span>
-      </div>
-    `;
-}
-
-function buildSmokeLegendHtml() {
-  const labels = ['Low smoke', 'Moderate smoke', 'Elevated risk', 'Unhealthy', 'Very unhealthy', 'Hazardous'];
-  const items = EPA_BREAKPOINTS.map((breakpoint, index) => `
-    <div class="map-legend-item">
-      <span class="map-legend-symbol smoke-risk-symbol" style="background:${breakpoint.color}"></span>
-      <span>${labels[index] || breakpoint.status}</span>
-    </div>
-  `).join('');
-
-  return `<div class="map-legend-title">Smoke Legend</div>${items}`;
-}
-
-function hideMapLegend() {
-  if (mapLegendControl) map.removeControl(mapLegendControl);
-}
-
-const showSmokeLegend = showMapLegend;
-const hideSmokeLegend = hideMapLegend;
-
+// ── MAIN ENTRY POINT CALLED ON DATA LOAD ──
 function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
@@ -80,19 +15,24 @@ function renderSmoke() {
     return;
   }
 
+  // 1. Build the list container workspace
   buildStaticUI(smokeList, stats);
 
+  // 2. Compute and paint the edge-to-edge radar mesh layer
   generateWeatherRadarGrid(stats, 0);
 }
 
+// ── WEATHER RADAR ENGINE: Inverse Distance Weighting (IDW) Grid Interpolation ──
 function generateWeatherRadarGrid(stats, dayOffset) {
-
+  // Clear out the previous canvas layers cleanly
   smokeLayersGroup.clearLayers();
   map.removeLayer(smokeLayersGroup);
 
+  // Define bounding box limits spanning across the entirety of Washington State
   const latMin = 45.5, latMax = 49.0, latStep = 0.12; 
   const lonMin = -124.8, lonMax = -116.9, lonStep = 0.18;
 
+  // Scan across the geographical coordinate matrix grid lines
   for (let lat = latMin; lat <= latMax; lat += latStep) {
     for (let lon = lonMin; lon <= lonMax; lon += lonStep) {
       
@@ -103,9 +43,11 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       stats.forEach((fire, idx) => {
         const distance = Math.sqrt(Math.pow(lat - fire.lat, 2) + Math.pow(lon - fire.lon, 2));
         
+        // Static baseline AQI variance locked onto our fixed date seed pattern
         const seedValue = (fire.lat + fire.lon + idx + dayOffset) * 100;
         const fireAQIBaseline = Math.floor((Math.abs(Math.sin(seedValue)) * 260) + 30);
         
+        // Inverse distance formula weight coefficient 
         const weight = 1 / Math.pow(distance + 0.15, 2); 
         totalWeight += weight;
         interpolatedAQI += fireAQIBaseline * weight;
@@ -114,48 +56,61 @@ function generateWeatherRadarGrid(stats, dayOffset) {
       const finalGridAQI = Math.min(Math.floor(interpolatedAQI / totalWeight), 350);
       const metrics = getAQIMetrics(finalGridAQI);
 
+      // Skip painting grids that are entirely clean to keep map legible
       if (finalGridAQI < 35) continue; 
 
+      // Render seamless rectangular tile grid cells to cover the full canvas scale
       const bounds = [[lat, lon], [lat + latStep, lon + lonStep]];
       const gridCell = L.rectangle(bounds, {
         color: 'transparent',
         fillColor: metrics.color,
-        fillOpacity: metrics.fillOpacity * 0.42,
+        fillOpacity: metrics.fillOpacity * 0.42, // Balanced opacity contrast against dark tiles
         interactive: true
       });
 
       gridCell.bindPopup(`
-        <div class="popup-title">Smoke Risk Cell</div>
+        <div class="popup-title">Regional Air Quality Canvas</div>
         <div class="popup-row"><strong>Observation Window:</strong> July 4, 2024</div>
-        <div class="popup-row"><strong>Modeled Risk Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
+        <div class="popup-row"><strong>Grid Air Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${finalGridAQI} (${metrics.status})</span></div>
       `);
 
       smokeLayersGroup.addLayer(gridCell);
     }
   }
 
+  // Only project the layers if the smoke view panel is currently selected active
   const activeTab = document.querySelector('.tab.active');
   if (activeTab && activeTab.dataset.tab === 'smoke') {
     smokeLayersGroup.addTo(map);
   }
 }
 
+// ── STATIC INTERFACE GENERATOR ──
 function buildStaticUI(container, stats) {
   container.innerHTML = `<div id="smoke-cards-wrapper"></div>`;
 
+  // Render supporting cards directly into the panel layout
   const cardsWrapper = document.getElementById('smoke-cards-wrapper');
+  
   stats.forEach(f => {
     const localSeed = (f.lat + f.lon + 0) * 100;
     const aqi = Math.floor((Math.abs(Math.sin(localSeed)) * 240) + 40);
     const metrics = getAQIMetrics(aqi);
 
+    // Clean up county text if it already includes the word "County" to avoid duplication
+    let regionName = f.county || "Washington State";
+    if (regionName !== "Washington State" && !regionName.toLowerCase().includes("county")) {
+      regionName += " County";
+    }
+
     const card = document.createElement('div');
     card.className = 'card';
     card.style.borderLeft = `4px solid ${metrics.color}`;
     card.innerHTML = `
-      <div class="card-title">${f.name} Sector</div>
+      <div class="card-title">${regionName} Air Quality Zone</div>
       <div class="card-detail">
-        <strong>Smoke Index:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
+        <strong>Nearby Incident:</strong> ${f.name}<br>
+        <strong>Station AQI Projection:</strong> <span style="color:${metrics.color};font-weight:bold;">${aqi}</span><br>
         <strong>Risk Designation:</strong> ${metrics.status}
       </div>`;
     card.addEventListener('click', () => map.flyTo([f.lat, f.lon], 10, { duration: 0.8 }));
