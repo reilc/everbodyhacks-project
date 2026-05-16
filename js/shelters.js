@@ -1,5 +1,5 @@
 // shelters.js
-// City-first search. Shelter/resource pins only appear after a city is selected.
+// City-first search against confirmed 2024 Washington wildfire shelter/resource records.
 
 function distanceMiles(from, to) {
   const toRad = degrees => degrees * Math.PI / 180;
@@ -51,93 +51,17 @@ function selectCity(city) {
   loadSheltersForCity(city);
 }
 
-async function loadSheltersForCity(city) {
-  allShelters = [];
+function loadSheltersForCity(city) {
+  allShelters = HISTORICAL_2024_SHELTERS
+    .map(shelter => ({
+      ...shelter,
+      distance: distanceMiles(city, shelter),
+    }))
+    .filter(shelter => shelter.distance <= SHELTER_SEARCH_RADIUS_MILES)
+    .sort((a, b) => a.distance - b.distance);
+
+  setShelterStatus('ok', `${allShelters.length} confirmed 2024 wildfire shelters/resources near ${city.name}`);
   renderShelters();
-  setShelterStatus('loading', `Searching confirmed mapped shelter/resource places near ${city.name}...`);
-
-  const query = `
-    [out:json][timeout:25];
-    (
-      node["amenity"="shelter"](around:${SHELTER_SEARCH_RADIUS_METERS},${city.lat},${city.lon});
-      way["amenity"="shelter"](around:${SHELTER_SEARCH_RADIUS_METERS},${city.lat},${city.lon});
-      relation["amenity"="shelter"](around:${SHELTER_SEARCH_RADIUS_METERS},${city.lat},${city.lon});
-      node["emergency"="assembly_point"](around:${SHELTER_SEARCH_RADIUS_METERS},${city.lat},${city.lon});
-      way["emergency"="assembly_point"](around:${SHELTER_SEARCH_RADIUS_METERS},${city.lat},${city.lon});
-      relation["emergency"="assembly_point"](around:${SHELTER_SEARCH_RADIUS_METERS},${city.lat},${city.lon});
-    );
-    out center tags;
-  `;
-
-  try {
-    const res = await fetch(OVERPASS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: new URLSearchParams({ data: query }),
-    });
-    if (!res.ok) throw new Error(`Overpass returned ${res.status}`);
-
-    const data = await res.json();
-    const seen = new Set();
-
-    allShelters = (data.elements || [])
-      .map(element => overpassElementToShelter(element, city))
-      .filter(Boolean)
-      .filter(place => {
-        const key = `${place.name}|${place.lat.toFixed(5)}|${place.lon.toFixed(5)}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 25);
-
-    setShelterStatus('ok', `${allShelters.length} confirmed mapped shelter/resource places near ${city.name}`);
-  } catch (err) {
-    console.error('Shelter search error:', err);
-    setShelterStatus('err', 'Could not load shelter/resource places right now');
-  }
-
-  renderShelters();
-}
-
-function overpassElementToShelter(element, city) {
-  const tags = element.tags || {};
-  const lat = element.lat ?? element.center?.lat;
-  const lon = element.lon ?? element.center?.lon;
-  const name = tags.name || tags.operator;
-  const labelText = `${tags.name || ''} ${tags.operator || ''} ${tags.description || ''}`;
-
-  const hasReliableName = Boolean(name);
-  const isShelterOrAssembly =
-    tags.amenity === 'shelter' ||
-    tags.emergency === 'assembly_point' ||
-    /shelter|evacuation|emergency/i.test(labelText);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lon) || !hasReliableName || !isShelterOrAssembly) {
-    return null;
-  }
-
-  const place = {
-    name,
-    type: tags.emergency === 'assembly_point' ? 'assembly point' : 'shelter',
-    address: formatAddress(tags),
-    operator: tags.operator || '',
-    lat,
-    lon,
-  };
-
-  place.distance = distanceMiles(city, place);
-  return place;
-}
-
-function formatAddress(tags) {
-  return [
-    tags['addr:housenumber'],
-    tags['addr:street'],
-    tags['addr:city'],
-    tags['addr:state'],
-  ].filter(Boolean).join(' ');
 }
 
 function renderShelters() {
@@ -147,8 +71,8 @@ function renderShelters() {
   shelterMarkers = [];
 
   if (!searchQuery) {
-    setShelterStatus('ok', 'Type a Washington city to find nearby resources');
-    list.innerHTML = '<div class="empty"><div class="icon">Search</div>Type a Washington city to find nearby shelter/resource places.</div>';
+    setShelterStatus('ok', `${HISTORICAL_2024_SHELTERS.length} confirmed 2024 wildfire shelters/resources loaded`);
+    list.innerHTML = '<div class="empty"><div class="icon">Search</div>Type a Washington city to find confirmed 2024 wildfire shelters and support resources.</div>';
     return;
   }
 
@@ -161,7 +85,7 @@ function renderShelters() {
   }
 
   if (!allShelters.length) {
-    list.innerHTML = `<div class="empty"><div class="icon">Shelters</div>No confirmed mapped shelter/resource places found near ${selectedCity.name} yet.</div>`;
+    list.innerHTML = `<div class="empty"><div class="icon">Shelters</div>No confirmed 2024 wildfire shelter/resource records found within ${SHELTER_SEARCH_RADIUS_MILES} miles of ${selectedCity.name}.</div>`;
     return;
   }
 
@@ -175,12 +99,14 @@ function renderShelters() {
         <span class="badge open">${shelter.type}</span>
       </div>
       <div class="card-detail">
+        <strong>Fire:</strong> ${shelter.fire}<br>
         <strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi<br>
-        ${shelter.address ? `<strong>Address:</strong> ${shelter.address}<br>` : ''}
-        ${shelter.operator ? `<strong>Operator:</strong> ${shelter.operator}` : ''}
+        <strong>2024 status:</strong> ${shelter.opened}<br>
+        <strong>Address:</strong> ${shelter.address}<br>
+        <strong>Source:</strong> <a href="${shelter.sourceUrl}" target="_blank" rel="noopener noreferrer">${shelter.sourceName}</a>
       </div>`;
 
-    card.addEventListener('click', () => map.flyTo([shelter.lat, shelter.lon], 14, { duration: 0.8 }));
+    card.addEventListener('click', () => map.flyTo([shelter.lat, shelter.lon], 13, { duration: 0.8 }));
     list.appendChild(card);
 
     const marker = L.circleMarker([shelter.lat, shelter.lon], {
@@ -193,9 +119,10 @@ function renderShelters() {
 
     marker.bindPopup(`
       <div class="popup-title">${shelter.name}</div>
+      <div class="popup-row"><strong>Fire:</strong> ${shelter.fire}</div>
       <div class="popup-row"><strong>Type:</strong> ${shelter.type}</div>
       <div class="popup-row"><strong>Distance:</strong> ${shelter.distance.toFixed(1)} mi</div>
-      ${shelter.address ? `<div class="popup-row"><strong>Address:</strong> ${shelter.address}</div>` : ''}
+      <div class="popup-row"><strong>Address:</strong> ${shelter.address}</div>
     `);
 
     shelterMarkers.push(marker);
@@ -207,7 +134,7 @@ function renderCityMatches(list) {
 
   if (!cities.length) {
     setShelterStatus('ok', 'No Washington cities match that search');
-    list.innerHTML = '<div class="empty"><div class="icon">Search</div>No city matches. Try Seattle, Wenatchee, Yakima, Omak, or Spokane.</div>';
+    list.innerHTML = '<div class="empty"><div class="icon">Search</div>No city matches. Try Chelan, Naches, Omak, Republic, White Salmon, or Cheney.</div>';
     return;
   }
 
