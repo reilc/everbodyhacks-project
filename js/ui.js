@@ -13,16 +13,16 @@ document.querySelectorAll('.tab').forEach(tab => {
       if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.removeLayer(m));
       if (typeof shelterMarkers !== 'undefined') shelterMarkers.forEach(m => map.removeLayer(m));
       if (typeof selectedCityMarker !== 'undefined' && selectedCityMarker) map.removeLayer(selectedCityMarker);
-      if (typeof showSmokeLegend === 'function') showSmokeLegend();
+      if (typeof showMapLegend === 'function') showMapLegend();
     } else if (tab.dataset.tab === 'fires') {
       if (typeof smokeLayersGroup !== 'undefined') map.removeLayer(smokeLayersGroup);
       if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.addLayer(m));
-      if (typeof hideSmokeLegend === 'function') hideSmokeLegend();
+      if (typeof showMapLegend === 'function') showMapLegend();
     } else {
       // Shelters tab view configuration
       if (typeof smokeLayersGroup !== 'undefined') map.removeLayer(smokeLayersGroup);
       if (typeof fireMarkers !== 'undefined') fireMarkers.forEach(m => map.addLayer(m));
-      if (typeof hideSmokeLegend === 'function') hideSmokeLegend();
+      if (typeof showMapLegend === 'function') showMapLegend();
       renderShelters();
     }
   });
@@ -72,4 +72,5 @@ searchInput.addEventListener('keydown', e => {
 });
 
 renderShelters();
+if (typeof showMapLegend === 'function') showMapLegend();
 loadWildfires();

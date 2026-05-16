@@ -3,10 +3,10 @@
  * Handles environmental data enrichment, severity color spectrums, and map heatmaps.
  */
 
-// Custom color palette graduating from low smoke risk to hazardous smoke risk.
+// Smoke palette uses warm colors so green remains reserved for resources.
 const EPA_BREAKPOINTS = [
-    { max: 50,  class: "aqi-good", status: "Good", color: "#2e7d32", fillOpacity: 0.15 },
-    { max: 100, class: "aqi-moderate", status: "Moderate", color: "#f2c94c", fillOpacity: 0.25 },
+    { max: 50,  class: "aqi-good", status: "Low Smoke", color: "#f2c94c", fillOpacity: 0.14 },
+    { max: 100, class: "aqi-moderate", status: "Moderate Smoke", color: "#f6ad55", fillOpacity: 0.24 },
     { max: 150, class: "aqi-unhealthy-sensitive", status: "Elevated Risk", color: "#fcae91", fillOpacity: 0.4 },
     { max: 200, class: "aqi-unhealthy", status: "Unhealthy", color: "#fb6a4a", fillOpacity: 0.55 },
     { max: 300, class: "aqi-very-unhealthy", status: "Very Unhealthy", color: "#de2d26", fillOpacity: 0.7 },

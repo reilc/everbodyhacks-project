@@ -3,41 +3,59 @@
 // across Washington State locked specifically to the July 4, 2024 simulation.
 
 let smokeLayersGroup = L.layerGroup();
-let smokeLegendControl = null;
+let mapLegendControl = null;
 
-function showSmokeLegend() {
-  if (smokeLegendControl) {
-    smokeLegendControl.addTo(map);
+function showMapLegend() {
+  if (mapLegendControl) {
+    mapLegendControl.addTo(map);
     return;
   }
 
-  smokeLegendControl = L.control({ position: 'topright' });
-  smokeLegendControl.onAdd = function() {
-    const div = L.DomUtil.create('div', 'smoke-legend');
+  mapLegendControl = L.control({ position: 'topright' });
+  mapLegendControl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'map-legend');
     div.innerHTML = `
-      <div class="smoke-legend-title">Smoke Risk</div>
-      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#2e7d32"></span>Good</div>
-      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#f2c94c"></span>Moderate</div>
-      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#fcae91"></span>Elevated</div>
-      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#fb6a4a"></span>Unhealthy</div>
-      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#de2d26"></span>Very Unhealthy</div>
-      <div class="smoke-legend-item"><span class="smoke-legend-swatch" style="background:#a50f15"></span>Hazardous</div>
+      <div class="map-legend-title">Map Legend</div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol wildfire-symbol"></span>
+        <span>Wildfire</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol selected-wildfire-symbol"></span>
+        <span>Wildfire selected</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol resource-symbol"></span>
+        <span>Resource</span>
+      </div>
+      <div class="map-legend-item">
+        <span class="map-legend-symbol city-symbol"></span>
+        <span>City searched</span>
+      </div>
     `;
     L.DomEvent.disableClickPropagation(div);
     L.DomEvent.disableScrollPropagation(div);
     return div;
   };
-  smokeLegendControl.addTo(map);
+  mapLegendControl.addTo(map);
 }
 
-function hideSmokeLegend() {
-  if (smokeLegendControl) map.removeControl(smokeLegendControl);
+function hideMapLegend() {
+  if (mapLegendControl) map.removeControl(mapLegendControl);
 }
+
+const showSmokeLegend = showMapLegend;
+const hideSmokeLegend = hideMapLegend;
 
 // ── MAIN ENTRY POINT CALLED ON DATA LOAD ──
 function renderSmoke() {
   const smokeList = document.getElementById('smoke-list');
   if (!smokeList) return;
+
+  if (document.querySelector('.tab.active')?.dataset.tab === 'smoke') {
+    if (typeof shelterMarkers !== 'undefined') shelterMarkers.forEach(marker => map.removeLayer(marker));
+    if (typeof selectedCityMarker !== 'undefined' && selectedCityMarker) map.removeLayer(selectedCityMarker);
+  }
 
   const stats = Array.isArray(allFires.stats) ? allFires.stats : [];
   if (!stats.length) {
