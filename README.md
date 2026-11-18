@@ -92,9 +92,11 @@ everbodyhacks-project/
 | WA DNR 2024 fire statistics | [WA DNR ArcGIS](https://fortress.wa.gov/dnr/adminsa/gisdata/lidar/DNR_Fire_Statistics/) | No |
 | 2024 wildfire perimeters | NIFC ArcGIS Feature Service | No |
 | Reverse geocoding (place names) | [Nominatim / OpenStreetMap](https://nominatim.openstreetmap.org) | No |
-| Map tiles | [CartoDB Voyager](https://carto.com/basemaps/) | No |
+| Map tiles | [OpenStreetMap](https://www.openstreetmap.org) | No |
 
 All data sources are free and publicly accessible — no API keys required.
+
+Both maps use the standard OpenStreetMap tile service. Keep the visible attribution and follow its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/), including no bulk downloading or offline prefetching. For higher traffic, use a suitable hosted tile provider.
 
 ---
 
